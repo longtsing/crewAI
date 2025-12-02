@@ -1,0 +1,317 @@
+---
+title: GitHub 集成
+description: "通过 GitHub 集成为 CrewAI 实现仓库和问题管理。"
+icon: "github"
+mode: "wide"
+---
+
+## 概述
+
+通过 GitHub 集成使你的智能体能够管理仓库、问题和发布。创建和更新问题、管理发布、跟踪项目开发，并通过 AI 驱动的自动化简化你的软件开发工作流程。
+
+## 先决条件
+
+在使用 GitHub 集成之前，确保你已经：
+
+- 拥有活跃订阅的 [CrewAI AOP](https://app.crewai.com) 账户
+- 拥有适当仓库权限的 GitHub 账户
+- 通过[集成页面](https://app.crewai.com/crewai_plus/connectors)连接了你的 GitHub 账户
+
+## 设置 GitHub 集成
+
+### 1. 连接你的 GitHub 账户
+
+1. 导航到 [CrewAI AOP 集成](https://app.crewai.com/crewai_plus/connectors)
+2. 在身份验证集成部分找到 **GitHub**
+3. 点击**连接**并完成 OAuth 流程
+4. 授予仓库和问题管理所需的必要权限
+5. 从[集成设置](https://app.crewai.com/crewai_plus/settings/integrations)复制你的企业令牌
+
+### 2. 安装必需的包
+
+```bash
+uv add crewai-tools
+```
+
+### 3. 环境变量设置
+
+<Note>
+  要与 `Agent(apps=[])` 一起使用集成，你必须设置 `CREWAI_PLATFORM_INTEGRATION_TOKEN` 环境变量和你的企业令牌。
+</Note>
+
+```bash
+export CREWAI_PLATFORM_INTEGRATION_TOKEN="your_enterprise_token"
+```
+
+或者将其添加到你的 `.env` 文件：
+
+```
+CREWAI_PLATFORM_INTEGRATION_TOKEN=your_enterprise_token
+```
+
+## 可用操作
+
+<AccordionGroup>
+  <Accordion title="github/create_issue">
+    **描述：**在 GitHub 中创建问题。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此问题关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此问题关联的仓库名称。
+    - `title`（字符串，必需）：问题标题 - 指定要创建的问题标题。
+    - `body`（字符串，可选）：问题正文 - 指定要创建的问题正文内容。
+    - `assignees`（字符串，可选）：被分配者 - 将此问题的被分配者的 GitHub 登录名指定为字符串数组。（示例：`["octocat"]`）
+  </Accordion>
+
+  <Accordion title="github/update_issue">
+    **描述：**在 GitHub 中更新问题。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此问题关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此问题关联的仓库名称。
+    - `issue_number`（字符串，必需）：问题编号 - 指定要更新的问题的编号。
+    - `title`（字符串，必需）：问题标题 - 指定要更新的问题标题。
+    - `body`（字符串，可选）：问题正文 - 指定要更新的问题正文内容。
+    - `assignees`（字符串，可选）：被分配者 - 将此问题的被分配者的 GitHub 登录名指定为字符串数组。（示例：`["octocat"]`）
+    - `state`（字符串，可选）：状态 - 指定问题的更新状态。
+      - 选项：`open`、`closed`
+  </Accordion>
+
+  <Accordion title="github/get_issue_by_number">
+    **描述：**在 GitHub 中按编号获取问题。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此问题关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此问题关联的仓库名称。
+    - `issue_number`（字符串，必需）：问题编号 - 指定要获取的问题编号。
+  </Accordion>
+
+  <Accordion title="github/lock_issue">
+    **描述：**在 GitHub 中锁定问题。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此问题关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此问题关联的仓库名称。
+    - `issue_number`（字符串，必需）：问题编号 - 指定要锁定的问题编号。
+    - `lock_reason`（字符串，必需）：锁定原因 - 指定锁定问题或拉取请求对话的原因。
+      - 选项：`off-topic`、`too heated`、`resolved`、`spam`
+  </Accordion>
+
+  <Accordion title="github/search_issue">
+    **描述：**在 GitHub 中搜索问题。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此问题关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此问题关联的仓库名称。
+    - `filter`（对象，必需）：筛选器 - 析取范式的 OR 或 AND 组。
+      ```json
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "operator": "AND",
+            "conditions": [
+              {
+                "field": "assignee",
+                "operator": "$stringExactlyMatches",
+                "value": "octocat"
+              }
+            ]
+          }
+        ]
+      }
+      ```
+      可用字段：`assignee`、`creator`、`mentioned`、`labels`
+  </Accordion>
+
+  <Accordion title="github/create_release">
+    **描述：**在 GitHub 中创建发布。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此发布关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此发布关联的仓库名称。
+    - `tag_name`（字符串，必需）：名称 - 指定要创建的发布标签名称。（示例："v1.0.0"）
+    - `target_commitish`（字符串，可选）：目标 - 指定发布的目标。这可以是分支名称或提交 SHA。默认为 master 分支。（示例："master"）
+    - `body`（字符串，可选）：正文 - 为此发布指定描述。
+    - `draft`（字符串，可选）：草稿 - 指定创建的发布是否应该是草稿（未发布）发布。
+      - 选项：`true`、`false`
+    - `prerelease`（字符串，可选）：预发布 - 指定创建的发布是否应该是预发布。
+      - 选项：`true`、`false`
+    - `discussion_category_name`（字符串，可选）：讨论类别名称 - 如果指定，将创建指定类别的讨论并链接到发布。该值必须是仓库中已存在的类别。
+    - `generate_release_notes`（字符串，可选）：发布说明 - 指定创建的发布是否应使用提供的名称和正文自动创建发布说明。
+      - 选项：`true`、`false`
+  </Accordion>
+
+  <Accordion title="github/update_release">
+    **描述：**在 GitHub 中更新发布。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此发布关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此发布关联的仓库名称。
+    - `id`（字符串，必需）：发布 ID - 指定要更新的发布 ID。
+    - `tag_name`（字符串，可选）：名称 - 指定要更新的发布标签名称。（示例："v1.0.0"）
+    - `target_commitish`（字符串，可选）：目标 - 指定发布的目标。这可以是分支名称或提交 SHA。默认为 master 分支。（示例："master"）
+    - `body`（字符串，可选）：正文 - 为此发布指定描述。
+    - `draft`（字符串，可选）：草稿 - 指定创建的发布是否应该是草稿（未发布）发布。
+      - 选项：`true`、`false`
+    - `prerelease`（字符串，可选）：预发布 - 指定创建的发布是否应该是预发布。
+      - 选项：`true`、`false`
+    - `discussion_category_name`（字符串，可选）：讨论类别名称 - 如果指定，将创建指定类别的讨论并链接到发布。该值必须是仓库中已存在的类别。
+    - `generate_release_notes`（字符串，可选）：发布说明 - 指定创建的发布是否应使用提供的名称和正文自动创建发布说明。
+      - 选项：`true`、`false`
+  </Accordion>
+
+  <Accordion title="github/get_release_by_id">
+    **描述：**在 GitHub 中按 ID 获取发布。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此发布关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此发布关联的仓库名称。
+    - `id`（字符串，必需）：发布 ID - 指定要获取的发布 ID。
+  </Accordion>
+
+  <Accordion title="github/get_release_by_tag_name">
+    **描述：**在 GitHub 中按标签名称获取发布。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此发布关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此发布关联的仓库名称。
+    - `tag_name`（字符串，必需）：名称 - 指定要获取的发布标签名称。（示例："v1.0.0"）
+  </Accordion>
+
+  <Accordion title="github/delete_release">
+    **描述：**在 GitHub 中删除发布。
+
+    **参数：**
+    - `owner`（字符串，必需）：所有者 - 指定与此发布关联的仓库的账户所有者名称。（示例："abc"）
+    - `repo`（字符串，必需）：仓库 - 指定与此发布关联的仓库名称。
+    - `id`（字符串，必需）：发布 ID - 指定要删除的发布 ID。
+  </Accordion>
+</AccordionGroup>
+
+## 使用示例
+
+### 基本 GitHub 智能体设置
+
+```python
+from crewai import Agent, Task, Crew
+
+# 创建具有 Github 功能的智能体
+github_agent = Agent(
+    role="仓库管理员",
+    goal="在 GitHub 中高效管理仓库、问题和发布",
+    backstory="一名专长于仓库管理和问题跟踪的 AI 助手。",
+    apps=['github']  # 所有 Github 操作都将可用
+)
+
+# 创建新问题的任务
+create_issue_task = Task(
+    description="在主仓库中为登录功能创建一个错误报告问题",
+    agent=github_agent,
+    expected_output="问题已成功创建及问题编号"
+)
+
+# 运行任务
+crew = Crew(
+    agents=[github_agent],
+    tasks=[create_issue_task]
+)
+
+crew.kickoff()
+```
+
+### 筛选特定的 GitHub 工具
+
+```python
+
+issue_manager = Agent(
+    role="问题管理员",
+    goal="高效创建和管理 GitHub 问题",
+    backstory="一名专注于问题跟踪和管理的 AI 助手。",
+    apps=['github/create_issue']
+)
+
+# 管理问题工作流程的任务
+issue_workflow = Task(
+    description="创建一个功能请求问题并将其分配给开发团队",
+    agent=issue_manager,
+    expected_output="功能请求问题已创建并成功分配"
+)
+
+crew = Crew(
+    agents=[issue_manager],
+    tasks=[issue_workflow]
+)
+
+crew.kickoff()
+```
+
+### 发布管理
+
+```python
+from crewai import Agent, Task, Crew
+
+release_manager = Agent(
+    role="发布管理员",
+    goal="管理软件发布和版本控制",
+    backstory="一名经验丰富的发布管理员，处理版本控制和发布流程。",
+    apps=['github']
+)
+
+# 创建新发布的任务
+release_task = Task(
+    description="""
+    为项目创建一个新的发布 v2.1.0：
+    - 自动生成的发布说明
+    - 目标 master 分支
+    - 包含新功能和错误修复的描述
+    """,
+    agent=release_manager,
+    expected_output="发布 v2.1.0 已成功创建及发布说明"
+)
+
+crew = Crew(
+    agents=[release_manager],
+    tasks=[release_task]
+)
+
+crew.kickoff()
+```
+
+### 问题跟踪和管理
+
+```python
+from crewai import Agent, Task, Crew
+
+project_coordinator = Agent(
+    role="项目协调员",
+    goal="跟踪和协调项目问题和开发进度",
+    backstory="一名帮助协调开发工作和跟踪项目进度的 AI 助手。",
+    apps=['github']
+)
+
+# 涉及多个 GitHub 操作的复杂任务
+coordination_task = Task(
+    description="""
+    1. 搜索分配给当前里程碑的所有未解决问题
+    2. 识别过期问题并更新其优先级标签
+    3. 在 '管理报告' 项目中创建每周进度报告问题
+    4. 锁定已不活跃 30 天的已解决问题
+    """,
+    agent=project_coordinator,
+    expected_output="项目协调已完成，包括进度报告和问题管理"
+)
+
+crew = Crew(
+    agents=[project_coordinator],
+    tasks=[coordination_task]
+)
+
+crew.kickoff()
+```
+
+## 获取帮助
+
+<Card title="需要帮助？" icon="headset" href="mailto:support@crewai.com">
+  联系我们的支持团队以获取 GitHub 集成设置或故障排除方面的帮助。
+</Card>

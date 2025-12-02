@@ -1,0 +1,98 @@
+---
+title: 任务
+description: 在 CrewAI 框架内管理和创建任务的详细指南。
+icon: list-check
+mode: "wide"
+---
+
+## 概览
+
+在 CrewAI 框架中，`Task` 是由 `Agent` 完成的特定分配。
+
+CrewAI 中的任务可以是协作的，需要多个代理一起工作。这是通过任务属性和团队流程管理的，增强了团队合作和效率。
+
+<Note type="info" title="企业增强：可视化任务构建器">
+CrewAI AOP 在 Crew Studio 中包含一个可视化任务构建器，简化了复杂任务创建和链接。可视化设计您的任务流程并实时测试它们，无需编写代码。
+
+![Task Builder Screenshot](/images/enterprise/crew-studio-interface.png)
+
+可视化任务构建器支持：
+- 拖放式任务创建
+- 可视化任务依赖和流程
+- 实时测试和验证
+- 轻松共享和协作
+</Note>
+
+### 任务执行流程
+
+任务可以两种方式执行：
+- **顺序**：按照定义的顺序执行任务
+- **分层**：根据代理的角色和专业知识分配任务
+
+执行流程在创建团队时定义：
+```python Code
+crew = Crew(
+    agents=[agent1, agent2],
+    tasks=[task1, task2],
+    process=Process.sequential  # 或 Process.hierarchical
+)
+```
+
+## 任务属性
+
+| 属性                        | 参数        | 类型                          | 描述                                                                                                          |
+| :------------------------------- | :---------------- | :---------------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| **描述**                  | `description`     | `str`                         | 对任务内容进行的清晰、简洁的陈述。                                                                 |
+| **预期输出**              | `expected_output` | `str`                         | 对任务完成样子的详细描述。                                                     |
+| **名称** _(可选)_            | `name`            | `Optional[str]`               | 任务的名字标识符。                                                                                      |
+| **代理** _(可选)_           | `agent`           | `Optional[BaseAgent]`         | 负责执行任务的代理。                                                                        |
+| **工具** _(可选)_           | `tools`           | `List[BaseTool]`              | 代理在此任务中限于使用的工具/资源。                                                       |
+| **上下文** _(可选)_         | `context`         | `Optional[List["Task"]]`      | 其输出将用作此任务上下文的其他任务。                                                     |
+| **异步执行** _(可选)_ | `async_execution` | `Optional[bool]`              | 任务是否应异步执行。默认为 False。                                               |
+| **人工输入** _(可选)_     | `human_input`     | `Optional[bool]`              | 任务是否应该有人工审查代理的最终答案。默认为 False。                        |
+| **Markdown** _(可选)_        | `markdown`        | `Optional[bool]`              | 任务是否应指示代理返回格式化为 Markdown 的最终答案。默认为 False。      |
+| **配置** _(可选)_          | `config`          | `Optional[Dict[str, Any]]`    | 任务特定的配置参数。                                                                              |
+| **输出文件** _(可选)_     | `output_file`     | `Optional[str]`               | 用于存储任务输出的文件路径。                                                                               |
+| **创建目录** _(可选)_ | `create_directory` | `Optional[bool]`             | 如果 output_file 不存在是否创建目录。默认为 True。                               |
+| **输出 JSON** _(可选)_     | `output_json`     | `Optional[Type[BaseModel]]`   | 用于结构化 JSON 输出的 Pydantic 模型。                                                                       |
+| **输出 Pydantic** _(可选)_ | `output_pydantic` | `Optional[Type[BaseModel]]`   | 任务输出的 Pydantic 模型。                                                                                    |
+| **回调** _(可选)_        | `callback`        | `Optional[Any]`               | 在任务完成后要执行的函数/对象。                                                                |
+| **防护** _(可选)_       | `guardrail`       | `Optional[Callable]`             | 在继续下一个任务之前验证任务输出的函数。                                                  |
+| **防护栏** _(可选)_       | `guardrails`       | `Optional[List[Callable] | List[str]]` | 防护栏列表，在继续下一个任务之前验证任务输出。                                      |
+| **防护栏最大重试次数** _(可选)_ | `guardrail_max_retries` | `Optional[int]`     | 防护栏验证失败时的最大重试次数。默认为 3。                                         |
+
+<Note type="warning" title="已弃用：max_retries">
+  任务属性 `max_retries` 已弃用，将在 v1.0.0 中删除。
+  请改用 `guardrail_max_retries` 来控制防护栏失败时的重试尝试次数。
+</Note>
+
+## 创建任务
+
+在 CrewAI 中有两种创建任务的方式：使用 **YAML 配置（推荐）** 或 **直接在代码中定义**。
+
+### YAML 配置（推荐）
+
+使用 YAML 配置提供了一种更清洁、更易维护的方式来定义任务。我们强烈建议在您的 CrewAI 项目中使用此方法来定义任务。
+
+按照 [安装](/zh/installation) 部分中概述的方式创建您的 CrewAI 项目后，导航到 `src/latest_ai_development/config/tasks.yaml` 文件并修改模板以匹配您的特定任务要求。
+
+<Note>
+您的 YAML 文件中的变量（如 `{topic}`）将在运行团队时用您的输入值替换：
+```python Code
+crew.kickoff(inputs={'topic': 'AI 代理'})
+```
+</Note>
+
+以下是如何使用 YAML 配置任务的示例：
+
+```yaml tasks.yaml
+research_task:
+  description: >
+    对 {topic} 进行彻底研究
+    确保您找到任何有趣和相关的信息，因为
+    当前年份是 2025 年。
+  expected_output: >
+    包含 10 个关于 {topic} 最相关信息的要点列表
+  agent: researcher
+
+reporting_task:

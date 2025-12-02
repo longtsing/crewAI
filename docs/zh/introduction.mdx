@@ -1,0 +1,164 @@
+---
+title: 介绍
+description: 构建协同工作的 AI 代理团队来解决复杂任务
+icon: handshake
+mode: "wide"
+---
+
+# 什么是 CrewAI？
+
+**CrewAI 是一个精简、极速的 Python 框架，完全从零开始构建 — 完全独立于 LangChain 或其他代理框架。**
+
+CrewAI 为开发者提供高级简单性和精确的低级控制，非常适合为任何场景创建自主 AI 代理：
+
+- **[CrewAI 团队](/zh/guides/crews/first-crew)**：优化自主性和协作智能，让您能够创建 AI 团队，其中每个代理都有特定的角色、工具和目标。
+- **[CrewAI 流程](/zh/guides/flows/first-flow)**：启用细粒度、事件驱动控制，单次 LLM 调用用于精确任务编排，并原生支持团队。
+
+通过我们的社区课程认证的开发者超过 100,000 名，CrewAI 正在迅速成为企业级 AI 自动化的标准。
+
+## 团队如何工作
+
+<Note>
+  就像公司有部门（销售、工程、营销）在领导下协同工作以实现业务目标一样，CrewAI 帮助您创建具有专业化角色的 AI 代理组织，协作完成复杂任务。
+</Note>
+
+<Frame caption="CrewAI 框架概览">
+  <img src="/images/crews.png" alt="CrewAI 框架概览" />
+</Frame>
+
+| 组件 | 描述 | 主要功能 |
+|:----------|:-----------:|:------------|
+| **团队** | 顶级组织 | • 管理 AI 代理团队<br/>• 监督工作流<br/>• 确保协作<br/>• 交付成果 |
+| **AI 代理** | 专业团队成员 | • 具有特定角色（研究员、作家）<br/>• 使用指定工具<br/>• 可以委派任务<br/>• 做出自主决策 |
+| **流程** | 工作流管理系统 | • 定义协作模式<br/>• 控制任务分配<br/>• 管理交互<br/>• 确保高效执行 |
+| **任务** | 个别分配 | • 具有明确目标<br/>• 使用特定工具<br/>• 融入更大的流程<br/>• 产生可操作的结果 |
+
+### 一切如何协同工作
+
+1. **团队**组织整体操作
+2. **AI 代理**处理其专业化任务
+3. **流程**确保顺畅协作
+4. **任务**完成以实现目标
+
+## 主要功能
+
+<CardGroup cols={2}>
+  <Card title="基于角色的代理" icon="users">
+    创建具有定义角色、专业知识和目标的专门代理 — 从研究员到分析师再到作家
+  </Card>
+  <Card title="灵活工具" icon="screwdriver-wrench">
+    为代理配备自定义工具和 API，与外部服务和数据源交互
+  </Card>
+  <Card title="智能协作" icon="people-arrows">
+    代理协同工作，分享见解和协调任务以实现复杂目标
+  </Card>
+  <Card title="任务管理" icon="list-check">
+    定义顺序或并行工作流，代理自动处理任务依赖关系
+  </Card>
+</CardGroup>
+
+## 流程如何工作
+
+<Note>
+  虽然团队擅长自主协作，但流程提供结构化自动化，对工作流执行提供精细控制。流程确保任务可靠、安全、高效地执行，精确处理条件逻辑、循环和动态状态管理。流程与团队无缝集成，让您能够在高度自主性与精确控制之间取得平衡。
+</Note>
+
+<Frame caption="CrewAI 框架概览">
+  <img src="/images/flows.png" alt="CrewAI 框架概览" />
+</Frame>
+
+| 组件 | 描述 | 主要功能 |
+|:----------|:-----------:|:------------|
+| **流程** | 结构化工作流编排 | • 管理执行路径<br/>• 处理状态转换<br/>• 控制任务序列<br/>• 确保可靠执行 |
+| **事件** | 工作流动作的触发器 | • 启动特定流程<br/>• 启用动态响应<br/>• 支持条件分支<br/>• 允许实时适应 |
+| **状态** | 工作流执行上下文 | • 维护执行数据<br/>• 启用持久化<br/>• 支持可恢复性<br/>• 确保执行完整性 |
+| **团队支持** | 增强工作流自动化 | • 在需要时注入自主性<br/>• 补充结构化工作流<br/>• 平衡自动化与智能<br/>• 启用自适应决策 |
+
+## 关键能力
+
+<CardGroup cols={2}>
+  <Card title="事件驱动编排" icon="bolt">
+    定义精确的执行路径，动态响应事件
+  </Card>
+  <Card title="精细控制" icon="sliders">
+    安全高效地管理工作流状态和条件执行
+  </Card>
+  <Card title="原生团队集成" icon="puzzle-piece">
+    与团队轻松结合以增强自主性和智能
+  </Card>
+  <Card title="确定性执行" icon="route">
+    通过显式控制流和错误处理确保可预测的结果
+  </Card>
+</CardGroup>
+
+## 何时使用团队 vs 流程
+
+<Note>
+  理解何时使用 [团队](/zh/guides/crews/first-crew) 与 [流程](/zh/guides/flows/first-flow) 是在您的应用程序中最大化 CrewAI 潜力的关键。
+</Note>
+
+| 使用场景 | 推荐方法 | 原因？ |
+|:---------|:---------------------|:-----|
+| **开放式研究** | [团队](/zh/guides/crews/first-crew) | 当任务需要创造性思维、探索和适应时 |
+| **内容生成** | [团队](/zh/guides/crews/first-crew) | 用于协作创建文章、报告或营销材料 |
+| **决策工作流** | [流程](/zh/guides/flows/first-flow) | 当您需要可预测、可审计的决策路径和精确控制时 |
+| **API 编排** | [流程](/zh/guides/flows/first-flow) | 用于与多个外部服务按特定序列可靠集成 |
+| **混合应用程序** | 组合方法 | 使用 [流程](/zh/guides/flows/first-flow) 编排整体流程，[团队](/zh/guides/crews/first-crew) 处理复杂子任务 |
+
+### 决策框架
+
+- **选择 [团队](/zh/guides/crews/first-crew) 当：** 您需要自主问题解决、创造性协作或探索性任务
+- **选择 [流程](/zh/guides/flows/first-flow) 当：** 您需要确定性结果、可审计性或对执行的精确控制
+- **两者结合当：** 您的应用程序需要结构化流程和自主智能区域
+
+## 为什么选择 CrewAI？
+
+- 🧠 **自主运行**：代理根据其角色和可用工具做出智能决策
+- 📝 **自然交互**：代理像人类团队成员一样沟通和协作
+- 🛠️ **可扩展设计**：轻松添加新工具、角色和功能
+- 🚀 **生产就绪**：为真实应用程序的可靠性和可扩展性而构建
+- 🔒 **安全优先**：考虑企业安全要求而设计
+- 💰 **成本高效**：优化以最小化 token 使用和 API 调用
+
+## 准备开始构建？
+
+<CardGroup cols={2}>
+  <Card
+    title="构建您的第一个团队"
+    icon="users-gear"
+    href="/zh/guides/crews/first-crew"
+  >
+    分步教程，创建协同工作的 AI 团队来解决复杂问题。
+  </Card>
+  <Card
+    title="构建您的第一个流程"
+    icon="diagram-project"
+    href="/zh/guides/flows/first-flow"
+  >
+    学习如何创建结构化、事件驱动的工作流，对执行进行精确控制。
+  </Card>
+</CardGroup>
+
+<CardGroup cols={3}>
+  <Card
+    title="安装 CrewAI"
+    icon="wrench"
+    href="/zh/installation"
+  >
+    在您的开发环境中开始使用 CrewAI。
+  </Card>
+  <Card
+    title="快速开始"
+    icon="bolt"
+    href="zh/quickstart"
+  >
+    遵循我们的快速开始指南创建第一个 CrewAI 代理并获得实践经验。
+  </Card>
+  <Card
+    title="加入社区"
+    icon="comments"
+    href="https://community.crewai.com"
+  >
+    与其他开发者联系，获取帮助，并分享您的 CrewAI 经验。
+  </Card>
+</CardGroup>

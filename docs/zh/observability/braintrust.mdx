@@ -1,0 +1,53 @@
+---
+title: Braintrust
+description: 通过 OpenTelemetry 追踪和评估将 Braintrust 与 CrewAI 集成
+icon: magnifying-glass-chart
+mode: "wide"
+---
+
+# Braintrust 集成
+
+本指南演示如何使用 **Braintrust** 通过 OpenTelemetry 与 **CrewAI** 集成，以进行全面的追踪和评估。通过本指南的结尾，您将能够追踪您的 CrewAI 代理、监控它们的性能并使用 Braintrust 的强大可观察性平台评估它们的输出。
+
+> **什么是 Braintrust？** [Braintrust](https://www.braintrust.dev) 是一个为 AI 应用程序提供全面追踪、评估和监控的 AI 评估和可观察性平台，具有内置实验跟踪和性能分析功能。
+
+我们将通过一个简单示例演示如何使用 CrewAI 并通过 OpenTelemetry 将其与 Braintrust 集成，以实现全面的可观察性和评估。
+
+## 入门
+
+我们将通过一个简单示例演示如何使用 CrewAI 并通过 OpenTelemetry 将其与 Braintrust 集成，以实现全面的可观察性和评估。
+
+### 步骤 1：安装依赖项
+
+```bash
+uv add braintrust[otel] crewai crewai-tools opentelemetry-instrumentation-openai opentelemetry-instrumentation-crewai python-dotenv
+```
+
+### 步骤 2：设置环境变量
+
+设置 Braintrust API 密钥并配置 OpenTelemetry 以将追踪发送到 Braintrust。您将需要一个 Braintrust API 密钥和您的 OpenAI API 密钥。
+
+```python
+import os
+from getpass import getpass
+
+# 获取您的 Braintrust 凭据
+BRAINTRUST_API_KEY = getpass("🔑 输入您的 Braintrust API 密钥：")
+
+# 获取服务的 API 密钥
+OPENAI_API_KEY = getpass("🔑 输入您的 OpenAI API 密钥：")
+
+# 设置环境变量
+os.environ["BRAINTRUST_API_KEY"] = BRAINTRUST_API_KEY
+os.environ["BRAINTRUST_PARENT"] = "project_name:crewai-demo"
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+```
+
+### 步骤 3：使用 Braintrust 初始化 OpenTelemetry
+
+使用 Braintrust OpenTelemetry 仪表化开始捕获追踪并发送到 Braintrust。
+
+```python
+import os
+from typing import Any, Dict
+```

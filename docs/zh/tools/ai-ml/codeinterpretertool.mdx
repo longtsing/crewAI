@@ -1,0 +1,209 @@
+---
+title: 代码解释器
+description: `CodeInterpreterTool` 是一个强大的工具，用于在安全的隔离环境中执行 Python 3 代码。
+icon: code-simple
+mode: "wide"
+---
+
+# `CodeInterpreterTool`
+
+## 描述
+
+`CodeInterpreterTool` 使 CrewAI 智能体能够执行它们自主生成的 Python 3 代码。这个功能特别有价值，因为它允许智能体创建代码、执行它、获得结果，并利用这些信息来通知后续决策和行动。
+
+有几种方法可以使用这个工具：
+
+### Docker 容器（推荐）
+
+这是主要选项。代码在安全的隔离 Docker 容器中运行，无论其内容如何都确保安全性。
+确保在你的系统上安装并运行 Docker。如果你没有它，可以从[这里](https://docs.docker.com/get-docker/)安装。
+
+### 沙盒环境
+
+如果 Docker 不可用——无论是未安装还是由于任何原因无法访问——代码将在受限的 Python 环境中执行——称为沙盒。
+这个环境非常有限，对许多模块和内置函数有严格限制。
+
+### 不安全执行
+
+**不建议在生产环境中使用**
+此模式允许执行任何 Python 代码，包括对 `sys`、`os` 等模块的危险调用。[查看](/zh/tools/ai-ml/codeinterpretertool#enabling-unsafe-mode)如何启用此模式
+
+## 日志记录
+
+`CodeInterpreterTool` 将选定的执行策略记录到 STDOUT
+
+## 安装
+
+要使用此工具，你需要安装 CrewAI 工具包：
+
+```shell
+pip install 'crewai[tools]'
+```
+
+## 示例
+
+以下示例演示了如何将 `CodeInterpreterTool` 与 CrewAI 智能体一起使用：
+
+```python 代码
+from crewai import Agent, Task, Crew, Process
+from crewai_tools import CodeInterpreterTool
+
+# 初始化工具
+code_interpreter = CodeInterpreterTool()
+
+# 定义使用工具的智能体
+programmer_agent = Agent(
+    role="Python 程序员",
+    goal="编写并执行 Python 代码来解决问题",
+    backstory="一名专业的 Python 程序员，能够编写高效的代码来解决复杂问题。",
+    tools=[code_interpreter],
+    verbose=True,
+)
+
+# 生成并执行代码的示例任务
+coding_task = Task(
+    description="编写一个 Python 函数来计算斐波那契数列到第 10 个数字并打印结果。",
+    expected_output="到第 10 个数字的斐波那契数列。",
+    agent=programmer_agent,
+)
+
+# 创建并运行 crew
+crew = Crew(
+    agents=[programmer_agent],
+    tasks=[coding_task],
+    verbose=True,
+    process=Process.sequential,
+)
+result = crew.kickoff()
+```
+
+你也可以在创建智能体时直接启用代码执行：
+
+```python 代码
+from crewai import Agent
+
+# 创建启用代码执行的智能体
+programmer_agent = Agent(
+    role="Python 程序员",
+    goal="编写并执行 Python 代码来解决问题",
+    backstory="一名专业的 Python 程序员，能够编写高效的代码来解决复杂问题。",
+    allow_code_execution=True,  # 这会自动添加 CodeInterpreterTool
+    verbose=True,
+)
+```
+
+### 启用 `unsafe_mode`
+
+```python 代码
+from crewai_tools import CodeInterpreterTool
+
+code = """
+import os
+os.system("ls -la")
+"""
+
+CodeInterpreterTool(unsafe_mode=True).run(code=code)
+```
+
+## 参数
+
+`CodeInterpreterTool` 在初始化期间接受以下参数：
+
+- **user_dockerfile_path**：可选。用于代码解释器容器的自定义 Dockerfile 路径。
+- **user_docker_base_url**：可选。用于运行容器的 Docker 守护进程 URL。
+- **unsafe_mode**：可选。是否在宿主机而不是 Docker 容器或沙盒中直接运行代码。默认为 `False`。请谨慎使用！
+- **default_image_tag**：可选。默认 Docker 图像标签。默认为 `code-interpreter:latest`
+
+当与智能体一起使用工具时，智能体需要提供：
+
+- **code**：必需。要执行的 Python 3 代码。
+- **libraries_used**：可选。代码中使用的需要安装的库列表。默认为 `[]`
+
+## 智能体集成示例
+
+这里是一个更详细的示例，展示如何将 `CodeInterpreterTool` 与 CrewAI 智能体集成：
+
+```python 代码
+from crewai import Agent, Task, Crew
+from crewai_tools import CodeInterpreterTool
+
+# 初始化工具
+code_interpreter = CodeInterpreterTool()
+
+# 定义使用工具的智能体
+data_analyst = Agent(
+    role="数据分析师",
+    goal="使用 Python 代码分析数据",
+    backstory="""你是一名专业的数据分析师，专长于使用 Python
+    来分析和可视化数据。你可以编写高效的代码来处理
+    大型数据集并提取有意义的洞察。""",
+    tools=[code_interpreter],
+    verbose=True,
+)
+
+# 为智能体创建任务
+analysis_task = Task(
+    description="""
+    编写 Python 代码来：
+    1. 生成包含 100 个点的 x 和 y 坐标的随机数据集
+    2. 计算 x 和 y 之间的相关系数
+    3. 创建数据的散点图
+    4. 打印相关系数并将图保存为 'scatter.png'
+
+    确保处理任何必要的导入并打印结果。
+    """,
+    expected_output="相关系数和散点图已保存的确认。",
+    agent=data_analyst,
+)
+
+# 运行任务
+crew = Crew(
+    agents=[data_analyst],
+    tasks=[analysis_task],
+    verbose=True,
+    process=Process.sequential,
+)
+result = crew.kickoff()
+```
+
+## 实现细节
+
+`CodeInterpreterTool` 使用 Docker 为代码执行创建安全环境：
+
+```python 代码
+class CodeInterpreterTool(BaseTool):
+    name: str = "代码解释器"
+    description: str = "解释带有最终打印语句的 Python3 代码字符串。"
+    args_schema: Type[BaseModel] = CodeInterpreterSchema
+    default_image_tag: str = "code-interpreter:latest"
+
+    def _run(self, **kwargs) -> str:
+        code = kwargs.get("code", self.code)
+        libraries_used = kwargs.get("libraries_used", [])
+
+        if self.unsafe_mode:
+            return self.run_code_unsafe(code, libraries_used)
+        else:
+            return self.run_code_safety(code, libraries_used)
+```
+
+该工具执行以下步骤：
+1. 验证 Docker 图像存在或在必要时构建它
+2. 创建挂载当前工作目录的 Docker 容器
+3. 安装智能体指定的任何必需库
+4. 在容器中执行 Python 代码
+5. 返回代码执行的输出
+6. 通过停止和移除容器进行清理
+
+## 安全考虑
+
+默认情况下，`CodeInterpreterTool` 在隔离的 Docker 容器中运行代码，这提供了一层安全性。然而，仍有一些安全考虑需要牢记：
+
+1. Docker 容器可以访问当前工作目录，因此敏感文件可能被潜在访问。
+2. 如果 Docker 容器不可用且代码需要安全运行，它将在沙盒环境中执行。出于安全原因，不允许安装任意库。
+3. `unsafe_mode` 参数允许代码在宿主机上直接执行，这只应在受信任的环境中使用。
+4. 在允许智能体安装任意库时要谨慎，因为它们可能包含恶意代码。
+
+## 结论
+
+`CodeInterpreterTool` 提供了一种强大的方式让 CrewAI 智能体在相对安全的环境中执行 Python 代码。通过使智能体能够编写和运行代码，它显著扩展了它们的问题解决能力，特别是对于涉及数据分析、计算或其他计算工作的任务。这个工具对于需要执行更有效地用代码而不是自然语言表达的复杂操作的智能体特别有用。

@@ -1,0 +1,393 @@
+---
+title: 构建你的第一个 Crew
+description: 分步教程创建一个协同工作的 AI 团队解决复杂问题。
+icon: users-gear
+mode: "wide"
+---
+
+## 释放协作 AI 的力量
+
+想象拥有一个专业化 AI 智能体团队，无缝协同工作解决复杂问题，每个都贡献他们独特的技能以实现共同目标。这就是 CrewAI 的力量——一个使你能够创建协作 AI 系统的框架，这些系统可以完成单个 AI 独自无法实现的任务。
+
+在本指南中，我们将逐步创建一个研究 crew，帮助我们研究和分析主题，然后创建综合报告。这个实际示例演示了 AI 智能体如何协同完成复杂任务，但这只是 CrewAI 可能性的开始。
+
+### 你将构建和学到的内容
+
+在本指南结束时，你将拥有：
+
+1. **创建了一个专业化 AI 研究团队**，具有不同的角色和职责
+2. **编排了多个 AI 智能体之间的协作**
+3. **自动化了复杂工作流程**，涉及信息收集、分析和报告生成
+4. **建立了基础技能**，你可以将其应用于更宏大的项目
+
+虽然我们在本指南中构建一个简单的研究 crew，但相同的模式和技术可以应用于创建更复杂的团队，用于以下任务：
+
+- 具有专业写作者、编辑和事实核查员的多阶段内容创建
+- 具有分层支持智能体的复杂客户服务系统
+- 收集数据、创建可视化和生成洞察的自主业务分析师
+- 构思、设计和规划实施的产品开发团队
+
+让我们开始构建你的第一个 crew！
+
+### 先决条件
+
+在开始之前，确保你已经：
+
+1. 按照[安装指南](/zh/installation)安装了 CrewAI
+2. 按照 [LLM 设置指南](/zh/concepts/llms#setting-up-your-llm)在环境中设置了 LLM API 密钥
+3. 具备基本的 Python 知识
+
+## 步骤 1：创建新的 CrewAI 项目
+
+首先，让我们使用 CLI 创建一个新的 CrewAI 项目。此命令将设置一个包含所有必要文件的完整项目结构，让你能够专注于定义你的智能体和任务，而不是设置样板代码。
+
+```bash
+crewai create crew research_crew
+cd research_crew
+```
+
+这将生成一个具有你的 crew 所需基本结构的项目。CLI 自动创建：
+
+- 包含必要文件的项目目录
+- 智能体和任务的配置文件
+- 基本的 crew 实现
+- 运行 crew 的主脚本
+
+<Frame caption="CrewAI 框架概述">
+  <img src="/images/crews.png" alt="CrewAI 框架概述" />
+</Frame>
+
+## 步骤 2：探索项目结构
+
+让我们花点时间理解 CLI 创建的项目结构。CrewAI 遵循 Python 项目的最佳实践，使你在 crew 变得更复杂时更容易维护和扩展你的代码。
+
+```
+research_crew/
+├── .gitignore
+├── pyproject.toml
+├── README.md
+├── .env
+└── src/
+    └── research_crew/
+        ├── __init__.py
+        ├── main.py
+        ├── crew.py
+        ├── tools/
+        │   ├── custom_tool.py
+        │   └── __init__.py
+        └── config/
+            ├── agents.yaml
+            └── tasks.yaml
+```
+
+这个结构遵循 Python 项目的最佳实践，使组织你的代码变得容易。配置文件（YAML）和实现代码（Python）的分离使你可以在不更改底层代码的情况下轻松修改 crew 的行为。
+
+## 步骤 3：配置你的智能体
+
+现在到了有趣的部分——定义你的 AI 智能体！在 CrewAI 中，智能体是具有特定角色、目标和背景故事的专业化实体，这些塑造了它们的行为。将它们视为戏剧中的角色，每个都有自己的个性和目的。
+
+对于我们的研究 crew，我们将创建两个智能体：
+1. 一个**研究员**，擅长查找和组织信息
+2. 一个**分析师**，可以解释研究发现并创建有洞察力的报告
+
+让我们修改 `agents.yaml` 文件来定义这些专业化的智能体。确保将 `llm` 设置为你正在使用的提供商。
+
+```yaml
+# src/research_crew/config/agents.yaml
+researcher:
+  role: >
+    {topic}的高级研究专家
+  goal: >
+    查找关于{topic}的全面和准确信息，
+    专注于近期发展和关键洞察
+  backstory: >
+    你是一位经验丰富的研究专家，擅长
+    从各种来源查找相关信息。你擅长
+    以清晰、结构化的方式组织信息，使
+    复杂的主题对其他人来说易于理解。
+  llm: provider/model-id  # 例如 openai/gpt-4o, google/gemini-2.0-flash, anthropic/claude...
+
+analyst:
+  role: >
+    {topic}的数据分析师和报告写作者
+  goal: >
+    分析研究发现并创建一个全面、结构良好的
+    报告，以清晰、引人入胜的方式呈现洞察
+  backstory: >
+    你是一位技术精湛的分析师，拥有数据解释
+    和技术写作的背景。你有识别模式
+    和从研究数据中提取有意义洞察的才能，
+    然后通过精心制作的报告有效地传达这些洞察。
+  llm: provider/model-id  # 例如 openai/gpt-4o, google/gemini-2.0-flash, anthropic/claude...
+```
+
+注意每个智能体如何具有不同的角色、目标和背景故事。这些元素不仅仅是描述性的——它们主动塑造了智能体如何处理其任务。通过精心制作这些内容，你可以创建具有互补的专业技能和视角的智能体。
+
+## 步骤 4：定义你的任务
+
+定义了智能体后，我们现在需要给它们特定的任务来执行。在 CrewAI 中，任务代表智能体将执行的具体工作，带有详细指令和预期输出。
+
+对于我们的研究 crew，我们将定义两个主要任务：
+1. 一个**研究任务**用于收集全面信息
+2. 一个**分析任务**用于创建有洞察力的报告
+
+让我们修改 `tasks.yaml` 文件：
+
+```yaml
+# src/research_crew/config/tasks.yaml
+research_task:
+  description: >
+    对{topic}进行彻底研究。专注于：
+    1. 关键概念和定义
+    2. 历史发展和近期趋势
+    3. 主要挑战和机遇
+    4. 著名应用或案例研究
+    5. 未来展望和潜在发展
+
+    确保以清晰部分的结构化格式组织你的发现。
+  expected_output: >
+    一份全面的研究文档，具有组织良好的部分，涵盖
+    {topic}的所有请求方面。在相关处包括具体事实、数字
+    和示例。
+  agent: researcher
+
+analysis_task:
+  description: >
+    分析研究发现并创建关于{topic}的综合报告。
+    你的报告应该：
+    1. 以执行摘要开始
+    2. 包括研究中的所有关键信息
+    3. 提供趋势和模式的洞察性分析
+    4. 提供建议或未来考虑
+    5. 以专业、易读的风格格式化，带有清晰的标题
+  expected_output: >
+    一份关于{topic}的精美、专业的报告，呈现研究
+    发现并添加分析和洞察。报告应该结构良好，
+    带有执行摘要、主要部分和结论。
+  agent: analyst
+  context:
+    - research_task
+  output_file: output/report.md
+```
+
+注意分析任务中的 `context` 字段——这是一个强大的功能，允许分析师访问研究任务的输出。这创建了一个信息在智能体之间自然流动的工作流程，就像在人类团队中一样。
+
+## 步骤 5：配置你的 Crew
+
+现在是通过配置我们的 crew 来将所有内容整合在一起的时候了。crew 是编排智能体如何协同工作完成任务的容器。
+
+让我们修改 `crew.py` 文件：
+
+```python
+# src/research_crew/crew.py
+from crewai import Agent, Crew, Process, Task
+from crewai.project import CrewBase, agent, crew, task
+from crewai_tools import SerperDevTool
+from crewai.agents.agent_builder.base_agent import BaseAgent
+from typing import List
+
+@CrewBase
+class ResearchCrew():
+    """用于全面主题分析和报告的研究 crew"""
+
+    agents: List[BaseAgent]
+    tasks: List[Task]
+
+    @agent
+    def researcher(self) -> Agent:
+        return Agent(
+            config=self.agents_config['researcher'], # type: ignore[index]
+            verbose=True,
+            tools=[SerperDevTool()]
+        )
+
+    @agent
+    def analyst(self) -> Agent:
+        return Agent(
+            config=self.agents_config['analyst'], # type: ignore[index]
+            verbose=True
+        )
+
+    @task
+    def research_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['research_task'] # type: ignore[index]
+        )
+
+    @task
+    def analysis_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['analysis_task'], # type: ignore[index]
+            output_file='output/report.md'
+        )
+
+    @crew
+    def crew(self) -> Crew:
+        """创建研究 crew"""
+        return Crew(
+            agents=self.agents,
+            tasks=self.tasks,
+            process=Process.sequential,
+            verbose=True,
+        )
+```
+
+在这段代码中，我们：
+1. 创建研究员智能体并为其配备 SerperDevTool 来搜索网络
+2. 创建分析师智能体
+3. 设置研究和分析任务
+4. 配置 crew 顺序运行任务（分析师将等待研究员完成）
+
+这就是魔法发生的地方——仅需几行代码，我们就定义了一个协作 AI 系统，其中专业化智能体在协调过程中协同工作。
+
+## 步骤 6：设置你的主脚本
+
+现在，让我们设置将运行我们 crew 的主脚本。这里我们提供希望 crew 研究的特定主题。
+
+```python
+#!/usr/bin/env python
+# src/research_crew/main.py
+import os
+from research_crew.crew import ResearchCrew
+
+# 如果输出目录不存在则创建
+os.makedirs('output', exist_ok=True)
+
+def run():
+    """
+    运行研究 crew。
+    """
+    inputs = {
+        'topic': '医疗保健中的人工智能'
+    }
+
+    # 创建并运行 crew
+    result = ResearchCrew().crew().kickoff(inputs=inputs)
+
+    # 打印结果
+    print("\n\n=== 最终报告 ===\n\n")
+    print(result.raw)
+
+    print("\n\n报告已保存到 output/report.md")
+
+if __name__ == "__main__":
+    run()
+```
+
+这个脚本准备环境，指定我们的研究主题，并启动 crew 的工作。CrewAI 的力量在这里很明显——这段代码非常简单，管理多个 AI 智能体的所有复杂性都由框架处理。
+
+## 步骤 7：设置你的环境变量
+
+在项目根目录中创建 `.env` 文件，包含你的 API 密钥：
+
+```sh
+SERPER_API_KEY=your_serper_api_key
+# 在这里也添加你提供商的 API 密钥。
+```
+
+请参阅 [LLM 设置指南](/zh/concepts/llms#setting-up-your-llm) 了解配置你选择的提供商的详细信息。你可以从 [Serper.dev](https://serper.dev/) 获取 Serper API 密钥。
+
+## 步骤 8：安装依赖项
+
+使用 CrewAI CLI 安装所需的依赖项：
+
+```bash
+crewai install
+```
+
+此命令将：
+1. 从你的项目配置读取依赖项
+2. 如果需要则创建虚拟环境
+3. 安装所有必需的包
+
+## 步骤 9：运行你的 Crew
+
+现在是激动人心的时刻——是时候运行你的 crew 并看到 AI 协作在行动中！
+
+```bash
+crewai run
+```
+
+当你运行此命令时，你将看到你的 crew 活跃起来。研究员将收集有关指定主题的信息，然后分析师将基于该研究创建综合报告。你将实时看到智能体的思考过程、行动和输出，因为它们协同工作完成任务。
+
+## 步骤 10：审查输出
+
+一旦 crew 完成其工作，你将在 `output/report.md` 文件中找到最终报告。报告将包括：
+
+1. 执行摘要
+2. 关于主题的详细信息
+3. 分析和洞察
+4. 建议或未来考虑
+
+花点时间欣赏你所完成的——你创建了一个多个 AI 智能体在复杂任务上协作的系统，每个都贡献其专业技能，产生比任何单个智能体单独实现更大的结果。
+
+## 探索其他 CLI 命令
+
+CrewAI 提供了几个其他有用的 CLI 命令用于处理 crew：
+
+```bash
+# 查看所有可用命令
+crewai --help
+
+# 运行 crew
+crewai run
+
+# 测试 crew
+crewai test
+
+# 重置 crew 记忆
+crewai reset-memories
+
+# 从特定任务重播
+crewai replay -t <task_id>
+```
+
+## 可能的艺术：超越你的第一个 Crew
+
+你在本指南中构建的只是开始。你学到的技能和模式可以应用于创建越来越复杂的 AI 系统。这里有一些你可以扩展这个基本研究 crew 的方法：
+
+### 扩展你的 Crew
+
+你可以向你的 crew 添加更多专业化的智能体：
+- 一个**事实核查员**来验证研究发现
+- 一个**数据可视化师**来创建图表和图形
+- 一个**领域专家**，在特定领域拥有专业知识
+- 一个**评论员**来识别分析中的弱点
+
+### 添加工具和能力
+
+你可以用额外的工具增强你的智能体：
+- 用于实时研究的网络浏览工具
+- 用于数据分析的 CSV/数据库工具
+- 用于数据处理的代码执行工具
+- 到外部服务的 API 连接
+
+### 创建更复杂的工作流程
+
+你可以实现更复杂的过程：
+- 管理智能体向工作智能体委派的层次过程
+- 带有用于完善的反馈循环的迭代过程
+- 多个智能体同时工作的并行过程
+- 基于中间结果适应的动态过程
+
+### 应用于不同领域
+
+相同的模式可以应用于为以下领域创建 crew：
+- **内容创建**：写作者、编辑、事实核查员和设计师协同工作
+- **客户服务**：分流智能体、专家和质量控制协同工作
+- **产品开发**：研究员、设计师和规划师协作
+- **数据分析**：数据收集员、分析师和可视化专家
+
+## 下一步
+
+既然你已经构建了你的第一个 crew，你可以：
+
+1. 试验不同的智能体配置和个性
+2. 尝试更复杂的任务结构和工作流程
+3. 实现自定义工具为你的智能体提供新能力
+4. 将你的 crew 应用于不同的主题或问题领域
+5. 探索 [CrewAI Flows](/zh/guides/flows/first-flow) 以获得使用过程编程的更高级工作流程
+
+<Check>
+恭喜！你已成功构建了你的第一个 CrewAI crew，它可以研究和分析你提供的任何主题。这个基础经验为你创建越来越复杂的 AI 系统装备了技能，这些系统可以通过协作智能处理复杂的多阶段问题。
+</Check>

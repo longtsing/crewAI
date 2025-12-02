@@ -1,0 +1,120 @@
+---
+title: "介绍"
+description: "CrewAI AOP REST API 完整参考"
+icon: "code"
+mode: "wide"
+---
+
+# CrewAI AOP API
+
+欢迎使用 CrewAI AOP API 参考。此 API 允许您以编程方式与已部署的团队交互，实现与您的应用程序、工作流和服务的集成。
+
+## 快速开始
+
+<Steps>
+  <Step title="获取您的 API 凭据">
+    导航到 CrewAI AOP 仪表板中您的团队详细信息页面，并从状态选项卡复制您的 Bearer 令牌。
+  </Step>
+
+  <Step title="发现所需输入">
+    使用 `GET /inputs` 端点查看您的团队期望的参数。
+  </Step>
+
+  <Step title="启动团队执行">
+    使用您的输入调用 `POST /kickoff` 以启动团队执行并接收 `kickoff_id`。
+  </Step>
+
+  <Step title="监控进度">
+    使用 `GET /status/{kickoff_id}` 检查执行状态并检索结果。
+  </Step>
+</Steps>
+
+## 身份验证
+
+所有 API 请求都需要使用 Bearer 令牌进行身份验证。在 `Authorization` 头中包含您的令牌：
+
+```bash
+curl -H "Authorization: Bearer YOUR_CREW_TOKEN" \
+  https://your-crew-url.crewai.com/inputs
+```
+
+### 令牌类型
+
+| 令牌类型 | 范围 | 用例 |
+|:-----------|:--------|:----------|
+| **Bearer Token** | 组织级访问 | 完整团队操作，适合服务器到服务器集成 |
+| **User Bearer Token** | 用户范围访问 | 有限权限，适合用户特定操作 |
+
+<Tip>
+您可以在 CrewAI AOP 仪表板中团队详细信息页面的状态选项卡中找到两种令牌类型。
+</Tip>
+
+## 基础 URL
+
+每个部署的团队都有自己唯一的 API 端点：
+
+```
+https://your-crew-name.crewai.com
+```
+
+将 `your-crew-name` 替换为您从仪表板获得的实际团队 URL。
+
+## 典型工作流
+
+1. **发现**: 调用 `GET /inputs` 以了解您的团队需要什么
+2. **执行**: 通过 `POST /kickoff` 提交输入以开始处理
+3. **监控**: 轮询 `GET /status/{kickoff_id}` 直到完成
+4. **结果**: 从完成的响应中提取最终输出
+
+## 错误处理
+
+API 使用标准 HTTP 状态代码：
+
+| 代码 | 含义 |
+|------|:--------|
+| `200` | 成功 |
+| `400` | 错误请求 - 无效输入格式 |
+| `401` | 未授权 - 无效 bearer 令牌 |
+| `404` | 未找到 - 资源不存在 |
+| `422` | 验证错误 - 缺少必需输入 |
+| `500` | 服务器错误 - 联系支持 |
+
+## 交互式测试
+
+<Info>
+**为什么没有"发送"按钮？** 由于每个 CrewAI AOP 用户都有自己唯一的团队 URL，我们使用**参考模式**而不是交互式游乐场以避免混淆。这向您展示了请求应该是什么样子，而没有非功能性的发送按钮。
+</Info>
+
+每个端点页面向您展示：
+- ✅ **确切的请求格式**及所有参数
+- ✅ **成功和错误情况的响应示例**
+- ✅ **多语言代码示例**（cURL、Python、JavaScript 等）
+- ✅ **具有正确 Bearer 令牌格式的身份验证示例**
+
+### **测试您的实际 API：**
+
+<CardGroup cols={2}>
+  <Card title="复制 cURL 示例" icon="terminal">
+    复制 cURL 示例并用您的实际值替换 URL + 令牌
+  </Card>
+  <Card title="使用 Postman/Insomnia" icon="play">
+    将示例导入您首选的 API 测试工具
+  </Card>
+</CardGroup>
+
+**示例工作流：**
+1. **从任何端点页面复制此 cURL 示例**
+2. **用您的实际团队 URL 替换 `your-actual-crew-name.crewai.com`**
+3. **用您从仪表板获得的真实令牌替换 Bearer 令牌**
+4. **在您的终端或 API 客户端中运行请求**
+
+## 需要帮助？
+
+<CardGroup cols={2}>
+  <Card title="企业支持" icon="headset" href="mailto:support@crewai.com">
+    获取 API 集成和故障排除的帮助
+  </Card>
+  <Card title="企业仪表板" icon="chart-line" href="https://app.crewai.com">
+    管理您的团队并查看执行日志
+  </Card>
+</CardGroup>

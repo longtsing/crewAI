@@ -1,0 +1,50 @@
+---
+title: Arize Phoenix
+description: 通过 OpenTelemetry 和 OpenInference 将 Arize Phoenix 与 CrewAI 集成
+icon: magnifying-glass-chart
+mode: "wide"
+---
+
+# Arize Phoenix 集成
+
+本指南演示如何使用 **Arize Phoenix** 通过 OpenTelemetry 和 [OpenInference](https://github.com/openinference/openinference) SDK 与 **CrewAI** 集成。通过本指南的结尾，您将能够追踪您的 CrewAI 代理并轻松调试它们。
+
+> **什么是 Arize Phoenix？** [Arize Phoenix](https://phoenix.arize.com) 是一个为 AI 应用程序提供追踪和评估的 LLM 可观察性平台。
+
+[![观看我们的集成与 Phoenix 演示](https://storage.googleapis.com/arize-assets/fixtures/setup_crewai.png)](https://www.youtube.com/watch?v=Yc5q3l6F7Ww)
+
+## 入门
+
+我们将通过一个简单示例演示如何使用 CrewAI 并通过 OpenTelemetry 使用 OpenInference 将其与 Arize Phoenix 集成。
+
+您还可以在 [Google Colab](https://colab.research.google.com/github/Arize-ai/phoenix/blob/main/tutorials/tracing/crewai_tracing_tutorial.ipynb) 上访问此指南。
+
+### 步骤 1：安装依赖项
+
+```bash
+pip install openinference-instrumentation-crewai crewai crewai-tools arize-phoenix-otel
+```
+
+### 步骤 2：设置环境变量
+
+设置 Phoenix Cloud API 密钥并配置 OpenTelemetry 以将追踪发送到 Phoenix。Phoenix Cloud 是 Arize Phoenix 的托管版本，但使用此集成并非必需。
+
+您可以在此获取免费的 Serper API 密钥 [here](https://serper.dev/)。
+
+```python
+import os
+from getpass import getpass
+
+# 获取您的 Phoenix Cloud 凭据
+PHOENIX_API_KEY = getpass("🔑 输入您的 Phoenix Cloud API 密钥：")
+
+# 获取服务的 API 密钥
+OPENAI_API_KEY = getpass("🔑 输入您的 OpenAI API 密钥：")
+SERPER_API_KEY = getpass("🔑 输入您的 Serper API 密钥：")
+
+# 设置环境变量
+os.environ["PHOENIX_CLIENT_HEADERS"] = f"api_key={PHOENIX_API_KEY}"
+os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = "https://app.phoenix.arize.com" # Phoenix Cloud，如果您使用自托管实例则更改为您的端点
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+os.environ["SERPER_API_KEY"] = SERPER_API_KEY
+```

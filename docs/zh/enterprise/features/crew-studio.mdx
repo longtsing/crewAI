@@ -1,0 +1,111 @@
+---
+title: Crew Studio
+description: '在 AI 辅助下使用自然语言和可视化工作流编辑器构建新的自动化。'
+icon: "pencil"
+mode: "wide"
+---
+
+## 概述
+
+Crew Studio 是一个交互式、AI 辅助的工作区，用于从头开始创建新的自动化，使用自然语言描述和可视化工作流编辑器。它画布以节点和边反映工作流，其中左侧显示 AI 推理，中间显示代理和任务，右侧提供可拖放的组件。
+
+<Frame>
+  ![Crew Studio 概览](/images/enterprise/crew-studio-overview.png)
+</Frame>
+
+## 基于提示的创建
+
+- **描述您想要的自动化**：解释您需要的团队和代理
+- **AI 生成代理、任务和工具**：Studio 基于您的描述创建相应的组件
+- **开始使用内置提示**：从常见用例的内置提示开始
+
+<Frame>
+  ![提示构建器](/images/enterprise/crew-studio-prompt.png)
+</Frame>
+
+## 可视化编辑器
+
+画布以三个主要面板组织：
+
+### AI 推理（左侧）
+在自动化执行期间显示 AI 的逐步思考过程，让您能够理解推理过程并识别潜在问题。
+
+### 画布（中心）
+- **节点**：代表代理、任务和工具
+- **连接**：显示工作流和依赖关系
+- **可视化流程**：您的团队操作的图形化表示
+
+### 组件（右侧）
+- **代理、任务、工具**：可拖放的组件，用于构建工作流
+- **资源**：模型、提示和配置的组件库
+
+<Frame>
+  ![可视化画布](/images/enterprise/crew-studio-canvas.png)
+</Frame>
+
+## 执行和调试
+
+切换到 **执行**视图来运行和观察您的自动化：
+
+- **事件时间线**：显示执行的详细事件日志
+- **详细日志**：按代理和任务分组的消息、原始数据和响应
+- **本地测试**：在部署前运行以验证工作流
+
+<Frame>
+  ![执行视图](/images/enterprise/crew-studio-execution.png)
+</Frame>
+
+## 发布和导出
+
+完成自动化后，您可以：
+
+- **发布**：部署到 CrewAI 自动化平台以获得实时功能
+- **导出为 React 组件**：获取用于自定义集成的 React 组件代码
+- **导出为 MCP**：将工作流导出为 MCP 服务器
+
+<Frame>
+  ![已发布自动化](/images/enterprise/crew-studio-published.png)
+</Frame>
+
+## 最佳实践
+
+- 在 Studio 中快速迭代，仅在稳定时发布
+- 保持组件库最小化以提高性能
+- 使用本地测试在部署前验证工作流
+- 记录事件时间线以用于调试和审计
+
+## 相关功能
+
+<CardGroup cols={4}>
+
+  <Card title="启用 Crew Studio" icon="palette">
+    href="/zh/enterprise/guides/enable-crew-studio"
+  >
+    在您的组织中启用 Crew Studio。
+  </Card>
+
+  <Card title="构建团队" icon="paintbrush">
+    href="/zh/enterprise/guides/build-crew"
+  >
+    从 GitHub 或 ZIP 文件构建团队。
+  </Card>
+
+  <Card title="部署团队" icon="rocket">
+    href="/zh/enterprise/guides/deploy-crew"
+  >
+    从 GitHub 或 ZIP 文件部署团队。
+  </Card>
+
+  <Card title="导出 React 组件" icon="download">
+    href="/zh/enterprise/guides/react-component-export"
+  >
+    导出 React 组件用于自定义集成。
+  </Card>
+
+  <Card title="导出为 MCP" icon="download">
+    href="/zh/enterprise/guides/export-as-mcp"
+  >
+    将工作流导出为 MCP 服务器。
+  </Card>
+
+</CardGroup>

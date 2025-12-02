@@ -1,0 +1,223 @@
+---
+title: 幻觉防护栏
+description: '在您的 CrewAI 任务中预防和检测 AI 幻觉。'
+icon: "shield-check"
+mode: "wide"
+---
+
+## 概述
+
+幻觉防护栏是一个企业功能，用于验证 AI 生成的内容，确保它基于事实且不包含幻觉。它会分析任务输出与提供的参考上下文进行比较，并在检测到潜在幻觉内容时提供详细反馈。
+
+## 什么是幻觉？
+
+AI 幻觉发生在语言模型生成的内容看似合理但事实上不正确或不受所提供上下文支持时。幻觉防护栏帮助防止这些问题，确保您的代理提供准确、可靠的信息。
+
+## 基本用法
+
+### 设置防护栏
+
+```python
+from crewai.tasks.hallucination_guardrail import HallucinationGuardrail
+from crewai import LLM
+
+# 基本用法 - 将使用任务的预期输出作为上下文
+guardrail = HallucinationGuardrail(
+    llm=LLM(model="gpt-4o-mini")
+)
+
+# 具有显式参考上下文
+context_guardrail = HallucinationGuardrail(
+    context="AI 帮助处理包括分析和生成在内的各种任务。",
+    llm=LLM(model="gpt-4o-mini")
+)
+
+# 在任务中添加防护栏
+task = Task(
+    description="撰写关于 AI 功能的摘要",
+    expected_output="基于所提供上下文的事实性摘要",
+    agent=my_agent,
+    guardrail=guardrail  # 添加防护栏以验证输出
+)
+```
+
+## 高级配置
+
+### 自定义阈值验证
+
+对于更严格的验证，您可以设置自定义忠实度阈值（0-10 分制）：
+
+```python
+# 需要高忠实度的严格防护栏
+strict_guardrail = HallucinationGuardrail(
+    context="量子计算使用存在于叠加态中的量子比特。",
+    llm=LLM(model="gpt-4o-mini"),
+    threshold=8.0  # 要求分数 >= 8.0 才能通过验证
+)
+```
+
+### 包含工具响应上下文
+
+当您的任务使用工具时，可以在防护栏中包含工具响应以获得更准确的验证：
+
+```python
+# 带有工具响应上下文的防护栏
+weather_guardrail = HallucinationGuardrail(
+    context="当前请求位置的天气信息。",
+    llm=LLM(model="gpt-4o-mini"),
+    tool_response="天气 API 返回：温度 22°C，湿度 65%，天空晴朗。"  # 包含工具结果
+)
+```
+
+## 它如何工作
+
+### 验证过程
+
+1. **上下文分析**：防护栏将任务输出与提供的参考上下文进行比较
+2. **忠实度评分**：使用内部评估器为内容分配 0-10 的忠实度分数
+3. **判定确定**：确定输出是可信（FAITHFUL）还是包含幻觉（HALLUCINATED）
+4. **反馈生成**：当验证失败时，提供详细的原因说明
+
+### 验证逻辑
+
+#### 默认模式
+
+使用基于判定（FAITHFUL vs HALLUCINATED）的验证：
+- 适合一般用途
+- 当检测到幻觉时提供清晰的反馈
+
+#### 阈值模式
+
+使用自定义阈值（例如 8.0）：
+- 适合高准确性要求
+- 根据具体需求调整严格程度
+
+## 防护栏结果
+
+防护栏返回结构化结果，指示验证状态：
+
+```python
+# 防护栏结果示例
+validation_result = guardrail(task_output)
+
+if validation_result.valid:
+    # 任务通过验证，正常完成
+    return task_output
+else:
+    # 任务未通过验证，包含反馈
+    raise ValidationError(validation_result.feedback)
+```
+
+### 结果属性
+
+- **valid**：布尔值，指示输出是否通过验证
+- **feedback**：验证失败时的详细反馈，包括：
+  - 忠实度分数
+  - 判定分类（FAITHFUL/HALLUCINATED）
+  - 不通过验证的具体原因
+
+## 最佳实践
+
+### 上下文指导原则
+
+<Steps>
+  <Step title="提供全面的上下文">
+    包含所有 AI 为验证事实性所需的相关信息：
+    
+    ```python
+    context = """
+    公司 XYZ 成立于 2020 年，专注于可再生能源解决方案。
+    他们有 150 名员工，2023 年收入为 5000 万美元。
+    主要产品包括太阳能电池板和风力涡轮机。
+    """
+    ```
+  </Step>
+  <Step title="保持上下文相关性">
+    仅包含与任务直接相关的信息以避免混淆：
+    
+    ```python
+    context = "撰写关于 AI 功能的摘要。"  # 聚焦
+    ```
+  </Step>
+  <Step title="定期更新上下文">
+    确保参考信息反映当前、准确的数据：
+    
+    ```python
+    # 定期审查和更新上下文信息
+    ```
+  </Step>
+</Steps>
+
+### 阈值选择
+
+<Steps>
+  <Step title="从默认验证开始">
+    首先使用默认模式以了解基线性能：
+    
+    ```python
+    # 不带自定义阈值，使用默认判定
+    guardrail = HallucinationGuardrail(
+        context="关于特定主题的信息",
+        llm=LLM(model="gpt-4o-mini")
+    )
+    ```
+  </Step>
+  <Step title="根据需求调整">
+    根据您的内容类型和质量要求调整：
+    
+    ```python
+    # 对于高准确性内容：使用高阈值
+    strict_guardrail = HallucinationGuardrail(
+        context="需要高准确性的技术文档",
+        llm=LLM(model="gpt-4o-mini"),
+        threshold=8.5
+    )
+    ```
+  </Step>
+</Steps>
+
+### 与任务系统集成
+
+自动验证防护栏与任务执行集成：
+- 验证在任务完成前自动发生
+- 如果验证失败，任务以详细反馈标记为失败
+- 成功的验证允许任务正常完成
+
+## 性能注意事项
+
+### 执行开销
+
+每次防护栏验证大约增加 1-3 秒的执行时间：
+- 考虑在内循环中使用防护栏的影响
+- 对频繁任务使用高效模型
+
+### 模型选择
+
+为防护栏验证选择适当的模型：
+- **gpt-4o-mini**：快速、经济高效的验证
+- **gpt-4o**：更准确但稍慢的验证
+- 根据您的预算和延迟要求选择
+
+## 故障排除
+
+### 验证总是失败
+
+可能的原因：
+- 上下文信息过于宽泛或矛盾
+- 阈值设置过高
+- 参考信息本身不正确或过时
+
+解决方案：
+- 审查和完善您的上下文信息
+- 调整阈值设置
+- 使用更强大的验证模型
+- 检查防护栏配置是否正确
+
+### 需要帮助？
+
+<Card title="需要帮助？" icon="headset">
+  href="mailto:support@crewai.com"
+  target="_blank"
+>
+  如果您在幻觉防护栏配置或故障排除方面需要帮助，请联系我们的支持团队。
+</Card>

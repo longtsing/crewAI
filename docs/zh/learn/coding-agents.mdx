@@ -1,0 +1,321 @@
+---
+title: 编码代理
+description: 创建编码代理以编程、调试和代码执行任务。
+icon: code
+mode: "wide"
+---
+
+## 概述
+
+编码代理是专为您项目编码、调试和代码执行任务设计的专门代理类型。这些代理可以：
+
+- 编写和生成 Python 代码
+- 调试现有代码库
+- 执行代码重构和优化
+- 处理 API 集成
+- 自动化测试和部署
+
+## 使用场景
+
+### 1. 代码生成和优化
+```python
+from crewai import Agent, Task, Crew, LLM
+
+code_writer = Agent(
+    role="高级 Python 开发者",
+    goal="编写优化、可维护和符合最佳实践的 Python 代码",
+    backstory="""您是高级 Python 开发者，具有深厚的语言知识、
+    软件工程原则和代码优化专业知识。
+    您擅长代码审查、性能优化和架构设计。""",
+    llm=LLM(model="gpt-4"),
+    allow_delegation=False,
+    verbose=True
+)
+
+optimization_task = Task(
+    description="""分析以下 Python 函数的性能问题并提出优化建议：
+    
+    ```python
+    def process_data(items):
+        result = []
+        for item in items:
+            # O(n²) 复杂度
+            result.append(process(item))
+        return result
+    ```
+    
+    函数表现出性能问题，因为它对每个项目使用 O(n²) 复杂度。
+    请识别瓶颈并提出优化建议，包括：
+    1. 时间复杂度分析
+    2. 更高效算法建议
+    3. 代码结构改进""",
+    expected_output="详细的性能分析报告，包含具体的优化建议和重构代码示例",
+    agent=code_writer
+)
+
+crew = Crew(
+    agents=[code_writer],
+    tasks=[optimization_task],
+    verbose=True
+)
+```
+
+### 2. API 集成和客户端开发
+```python
+from crewai import Agent, Task, Crew, Tool
+from crewai.tools import BaseTool
+
+api_developer = Agent(
+    role="API 开发者",
+    goal="设计、实现和维护 REST API 和客户端库",
+    backstory="""您是 API 开发专家，具有：
+    - RESTful API 设计经验
+    - 客户端库开发专业知识
+    - API 文档编写能力
+    - 版本控制和向后兼容性考虑""",
+    tools=[create_openapi_spec, generate_client_code],
+    allow_delegation=True,
+    llm=LLM(model="gpt-4")
+)
+
+# 工具定义
+class CreateOpenAPISpecTool(BaseTool):
+    name: "创建 OpenAPI 规范"
+    description: "为现有 API 创建标准的 OpenAPI 3.0 规范文档"
+    
+    def _run(self, api_details: str):
+        # 实现 OpenAPI 规范生成逻辑
+        return {"spec": f"基于 {api_details} 生成的 OpenAPI 规范"}
+
+class GenerateClientCodeTool(BaseTool):
+    name: "生成客户端代码"
+    description: "为 API 生成多种语言的客户端代码"
+    
+    def _run(self, spec_path: str, languages: list):
+        # 实现代码生成逻辑
+        return {"client_code": f"为 {spec_path} 生成 {languages} 客户端代码"}
+
+# 任务定义
+api_spec_task = Task(
+    description="为我们的用户管理 API 创建 OpenAPI 3.0 规范",
+    expected_output="完整的 OpenAPI 3.0 规范文档",
+    agent=api_developer,
+    tools=[create_openapi_spec]
+)
+
+client_generation_task = Task(
+    description="为生成的规范创建 Python、JavaScript 和 TypeScript 客户端代码",
+    expected_output="功能完整的客户端代码库",
+    agent=api_developer,
+    tools=[generate_client_code]
+)
+
+crew = Crew(
+    agents=[api_developer],
+    tasks=[api_spec_task, client_generation_task],
+    process=Process.sequential,
+    verbose=True
+)
+```
+
+### 3. 自动化测试和部署
+```python
+from crewai import Agent, Task, Crew, Process
+
+devops_agent = Agent(
+    role="DevOps 工程师",
+    goal="自动化软件开发生命周期，包括测试、部署和监控",
+    backstory="""您是 DevOps 专家，专注于：
+    - CI/CD 管道设置
+    - 容器化和编排
+    - 监控和日志记录
+    - 基础设施即代码实践""",
+    tools=[run_tests, deploy_application, setup_monitoring],
+    allow_delegation=True,
+    llm=LLM(model="gpt-4")
+)
+
+class RunTestsTool(BaseTool):
+    name: "运行测试套件"
+    description: "执行自动化测试套件并生成报告"
+    
+    def _run(self, test_suite: str):
+        return {"test_results": f"为 {test_suite} 执行的测试结果"}
+
+class DeployApplicationTool(BaseTool):
+    name: "部署应用程序"
+    description: "将应用程序部署到指定环境"
+    
+    def _run(self, app_path: str, environment: str):
+        return {"deployment": f"将 {app_path} 部署到 {environment}"}
+
+class SetupMonitoringTool(BaseTool):
+    name: "设置监控"
+    description: "为应用程序设置监控和日志记录"
+    
+    def _run(self, app_name: str):
+        return {"monitoring": f"为 {app_name} 设置监控"}
+
+# 任务定义
+testing_task = Task(
+    description="执行完整的自动化测试套件",
+    expected_output="详细的测试报告和通过/失败状态",
+    agent=devops_agent,
+    tools=[run_tests]
+)
+
+deployment_task = Task(
+    description="将应用程序部署到生产环境",
+    expected_output="部署确认和回滚计划",
+    agent=devops_agent,
+    tools=[deploy_application]
+)
+
+monitoring_task = Task(
+    description="为新部署的应用程序设置监控",
+    expected_output="监控配置和健康检查结果",
+    agent=devops_agent,
+    tools=[setup_monitoring]
+)
+
+crew = Crew(
+    agents=[devops_agent],
+    tasks=[testing_task, deployment_task, monitoring_task],
+    process=Process.sequential,
+    verbose=True
+)
+```
+
+## 编码代理最佳实践
+
+### 1. 明确的任务定义
+```python
+# ✅ 良好：具体和可操作的
+task = Task(
+    description="重构以下 Python 函数以提高性能：[具体函数列表]",
+    expected_output="每个函数的重构版本和性能改进说明",
+    agent=code_agent
+)
+
+# ❌ 避免：模糊和笼统
+task = Task(
+    description="改进代码质量",  # 过于笼统
+    expected_output="更好的代码"  # 缺乏具体标准
+)
+```
+
+### 2. 使用适当的工具
+```python
+# 为编码代理配置相关工具
+coding_agent = Agent(
+    role="Python 开发者",
+    goal="编写和优化 Python 代码",
+    tools=[
+        file_writer,     # 文件操作
+        code_executor,   # 代码执行
+        syntax_checker,  # 语法检查
+        debugger        # 调试工具
+    ],
+    llm=LLM(model="gpt-4")
+)
+```
+
+### 3. 代码审查和质量检查
+```python
+class CodeQualityCheckerTool(BaseTool):
+    name: "代码质量检查器"
+    description="检查代码质量指标"
+    
+    def _run(self, code: str):
+        # 实现代码质量分析
+        return {
+            "complexity": "计算圈复杂度",
+            "maintainability": "评估可维护性指数",
+            "test_coverage": "检查测试覆盖率"
+        }
+```
+
+### 4. 版本控制集成
+```python
+# 在编码任务中包含版本控制考虑
+task = Task(
+    description="""将以下功能迁移到新的微服务架构：
+    
+    需要考虑：
+    - 保持 API 向后兼容性
+    - 使用语义化版本控制
+    - 实现适当的测试覆盖
+    - 更新文档和迁移指南
+    
+    当前代码：[现有代码库链接]""",
+    expected_output="迁移计划、代码变更和部署策略",
+    agent=coding_agent
+)
+```
+
+## 高级配置
+
+### 自定义编码标准
+```python
+from crewai import Agent, LLM
+
+agent = Agent(
+    role="资深代码架构师",
+    goal="确保代码符合公司编码标准和架构原则",
+    backstory="""您是资深代码架构师，负责维护代码质量、
+    性能和安全性标准。您建立了团队的编码指南并确保所有代码都符合最佳实践。""",
+    llm=LLM(model="gpt-4"),
+    # 添加自定义指令以强制遵循编码标准
+    instructions="""
+    始终遵循以下编码标准：
+    1. 使用类型提示
+    2. 保持函数简单和单一职责
+    3. 编写全面的单元测试
+    4. 使用适当的异常处理
+    5. 记录重要的决策和变更
+    6. 定期进行代码审查
+    ""
+)
+```
+
+### 与开发工作流集成
+```python
+from crewai import Agent, Crew, Process
+from crewai.tools import FileReadTool, FileWriteTool
+
+# 创建集成开发工作流的团队
+code_agent = Agent(
+    role="开发人员",
+    goal="编写高质量代码并维护开发工作流",
+    backstory="软件开发人员，专注于创建和维护高效的开发流程。"
+)
+
+qa_agent = Agent(
+    role="QA 工程师",
+    goal="确保代码质量并管理测试流程",
+    backstory="QA 工程师，专注于测试策略和质量保证。"
+)
+
+# 创建与开发工作流集成的任务
+code_review_task = Task(
+    description="审查新代码更改并确保质量标准",
+    expected_output="代码审查报告和批准状态",
+    agent=qa_agent
+)
+
+ci_cd_task = Task(
+    description="设置和维护 CI/CD 管道",
+    expected_output="配置完成的 CI/CD 管道",
+    agent=code_agent  # 可以委托给专门的 DevOps 工具
+)
+
+crew = Crew(
+    agents=[code_agent, qa_agent],
+    tasks=[code_review_task, ci_cd_task],
+    process=Process.hierarchical,  # 使用层次结构协调开发工作流
+    manager_llm="gpt-4",
+    verbose=True
+)
+```
+
+编码代理为软件开发项目提供了强大的代码创建、优化和维护能力，确保您的代码库始终保持高质量和高性能。

@@ -1,0 +1,86 @@
+---
+title: 团队
+description: 理解和利用 CrewAI 框架中的团队，包含全面的属性和功能。
+icon: people-group
+mode: "wide"
+---
+
+## 概览
+
+在 CrewAI 中，团队代表一组协同工作以完成一系列任务的代理。每个团队定义了任务执行策略、代理协作和整体工作流。
+
+## 团队属性
+
+| 属性                             | 参数             | 描述                                                                                                                                                                                                                                               |
+| :------------------------------------ | :--------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **任务**                             | `tasks`                | 分配给团队的任务列表。                                                                                                                                                     |
+| **代理**                            | `agents`               | 作为团队成员的代理列表。                                                                                                                                                                                                               |
+| **流程** _(可选)_              | `process`              | 团队遵循的流程流程（例如，顺序、分层）。默认为 `sequential`。                                                                                                                                                              |
+| **详细** _(可选)_              | `verbose`              | 执行期间日志记录的详细程度。默认为 `False`。                                                                                                                                                                                    |
+| **管理器 LLM** _(可选)_          | `manager_llm`          | 在分层流程中由管理器代理使用的语言模型。**使用分层流程时必需。**                                                                                                                                   |
+| **函数调用 LLM** _(可选)_ | `function_calling_llm` | 如果传递，团队将使用此 LLM 为团队中的所有代理进行工具调用。每个代理可以有自己的 LLM，这会覆盖团队的函数调用 LLM。                                                                  |
+| **配置** _(可选)_               | `config`               | 团队的可选配置设置，格式为 `Json` 或 `Dict[str, Any]`。                                                                                                                                                                       |
+| **最大 RPM** _(可选)_              | `max_rpm`              | 团队在执行期间遵循的每分钟最大请求数。默认为 `None`。                                                                                                                                                                     |
+| **内存** _(可选)_               | `memory`               | 用于存储执行记忆（短期、长期、实体记忆）。                                                                                                                                                                           |                                                                                                                                                                                       |
+| **缓存** _(可选)_                | `cache`                | 指定是否使用缓存来存储工具执行的结果。默认为 `True`。                                                                                                                                                         |
+| **嵌入器** _(可选)_             | `embedder`             | 团队使用的嵌入器配置。目前主要由内存使用。默认为 `{"provider": "openai"}`。                                                                                                                                |
+| **步骤回调** _(可选)_        | `step_callback`        | 在每个代理的每个步骤之后调用的函数。这可用于记录代理的操作或执行其他操作；它不会覆盖代理特定的 `step_callback`。                                                               |
+| **任务回调** _(可选)_        | `task_callback`        | 在每个任务完成后调用的函数。适用于任务执行后的监控或其他操作。                                                                                                                          |
+| **共享团队** _(可选)_           | `share_crew`           | 您是否希望与 CrewAI 团队共享完整的团队信息和执行，以使库更好，并允许我们训练模型。                                                                                                      |
+| **输出日志文件** _(可选)_      | `output_log_file`      | 设置为 True 以在当前目录中保存日志为 logs.txt 或提供文件路径。如果文件名以 .json 结尾，日志将采用 JSON 格式，否则为 .txt。默认为 `None`。                                                                      |
+| **管理器代理** _(可选)_        | `manager_agent`        | `manager` 设置将用作管理器的自定义代理。                                                                                                                                                                                             |
+| **提示文件** _(可选)_          | `prompt_file`          | 供团队使用的提示 JSON 文件路径。                                                                                                                                                                                                     |
+| **规划** *(可选)*             | `planning`             | 为团队添加规划能力。当激活时，在每次团队迭代之前，所有团队数据被发送到 AgentPlanner，该规划器将规划任务，此规划将被添加到每个任务描述。                                                     |
+| **规划 LLM** *(可选)*         | `planning_llm`         | AgentPlanner 在规划过程中使用的语言模型。                                                                                                                                                                                        |
+| **知识源** _(可选)_    | `knowledge_sources`    | 团队级别可用的知识源，所有代理都可以访问。                                                                                                                                                                                    |
+| **流式** _(可选)_               | `stream`               | 启用流式输出以在团队执行期间接收实时更新。返回可以迭代的 `CrewStreamingOutput` 对象。默认为 `False`。                                                                                    |
+
+<Tip>
+**团队最大 RPM**：`max_rpm` 属性设置团队可以执行的最大每分钟请求数以避免速率限制，如果您设置了它，将覆盖各个代理的 `max_rpm` 设置。
+</Tip>
+
+## 创建团队
+
+在 CrewAI 中有两种创建团队的方式：使用 **YAML 配置（推荐）** 或 **直接在代码中定义**。
+
+### YAML 配置（推荐）
+
+使用 YAML 配置提供了一种更清洁、更易维护的方式来定义团队，并且与 CrewAI 项目中定义代理和任务的方式保持一致。
+
+按照 [安装](/zh/installation) 部分中概述的方式创建您的 CrewAI 项目后，您可以在继承自 `CrewBase` 并使用装饰器定义代理、任务和团队本身的类中定义您的团队。
+
+#### 带装饰器的示例团队类
+
+```python code
+from crewai import Agent, Crew, Task, Process
+from crewai.project import CrewBase, agent, task, crew, before_kickoff, after_kickoff
+from crewai.agents.agent_builder.base_agent import BaseAgent
+from typing import List
+
+@CrewBase
+class YourCrewName:
+    """您的团队描述"""
+
+    agents: List[BaseAgent]
+    tasks: List[Task]
+
+    # 您的 YAML 配置文件的路径
+    # 要查看在 YAML 中定义的示例代理和任务，请查看以下内容：
+    # - 任务: https://docs.crewai.com/concepts/tasks#yaml-configuration-recommended
+    # - 代理: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
+    agents_config = 'config/agents.yaml'
+    tasks_config = 'config/tasks.yaml'
+
+    @before_kickoff
+    def prepare_inputs(self, inputs):
+        # 在团队开始前修改输入
+        inputs['additional_data'] = "一些额外信息"
+        return inputs
+
+    @after_kickoff
+    def process_output(self, output):
+        # 在团队完成后修改输出
+        output.raw += "\n在启动后处理。"
+        return output
+
+    @agent

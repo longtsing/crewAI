@@ -1,0 +1,223 @@
+---
+title: '代理仓库'
+description: '了解如何使用代理仓库在团队和项目中共享和重用您的代理。'
+icon: 'people-group'
+mode: "wide"
+---
+
+代理仓库允许企业用户存储、共享和跨团队和项目重用代理定义。此功能使组织能够维护标准化的代理库，促进一致性并减少重复工作。
+
+## 代理仓库的好处
+
+- **标准化**：在您的组织内维护一致的代理定义
+- **可重用性**：创建一个代理并在多个团队和项目中使用它
+- **治理**：为代理配置实施组织范围的政策
+- **协作**：使团队能够共享和基于彼此的工作进行构建
+
+## 创建和使用代理仓库
+
+### 1. 您必须拥有 CrewAI 账户
+
+请尝试[免费计划](https://app.crewai.com/)。
+
+### 2. 创建具有特定角色和目标的代理
+
+为您的团队工作流创建具有特定角色的代理：
+```python
+from crewai import Agent
+
+# 创建一个代理
+researcher = Agent(
+    from_repository="market-research-agent"
+)
+```
+
+### 3. 为每个助手配置工具和能力
+
+为每个专门助手配置适当的工具：
+```python
+# 市场研究代理可能需要网络搜索和数据分析工具
+market_researcher = Agent(
+    from_repository="market-research-agent",
+    tools=[search_tool, analysis_tool]  # 添加相关工具
+    verbose=True
+)
+```
+
+### 4. 部署代理到项目
+
+您可以通过可视化界面或 API 集成在项目之间部署代理：
+- 从 GitHub 或 ZIP 文件部署
+- 在多个项目间重用代理定义
+
+### 从仓库加载代理
+
+您可以使用 `from_repository` 参数在代码中从仓库加载代理：
+
+```python
+from crewai import Agent
+
+# 通过从仓库加载创建代理
+researcher = Agent(
+    from_repository="market-research-agent"
+)
+
+# 代理使用仓库中定义的所有预定义配置加载
+```
+
+### 覆盖仓库设置
+
+您可以通过在配置中提供它们来覆盖仓库中的特定设置：
+
+```python
+researcher = Agent(
+    from_repository="market-research-agent",
+    goal="研究 2025 年 AI 开发的最新趋势",  # 覆盖仓库目标
+    verbose=True  # 添加不在仓库中的设置
+)
+```
+
+### 示例：使用仓库代理创建团队
+
+```python
+from crewai import Crew, Agent, Task
+
+# 从仓库加载代理
+researcher = Agent(
+    from_repository="market-research-agent"
+)
+
+writer = Agent(
+    from_repository="content-writer-agent"
+)
+
+# 创建任务
+research_task = Task(
+    description="研究 AI 开发的最新趋势",
+    agent=researcher
+)
+
+writing_task = Task(
+    description="基于研究撰写综合报告",
+    agent=writer
+)
+
+# 创建团队
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[research_task, writing_task],
+    verbose=True
+)
+
+# 运行团队
+result = crew.kickoff()
+```
+
+### 使用 `kickoff()` 与仓库代理
+
+对于简单交互，您可以直接使用仓库代理：
+
+```python
+from crewai import Agent
+from pydantic import BaseModel
+from typing import List
+
+# 定义结构化输出格式
+class MarketAnalysis(BaseModel):
+    key_trends: List[str]
+    opportunities: List[str]
+    recommendation: str
+
+# 从仓库加载代理
+analyst = Agent(
+    from_repository="market-analyst-agent",
+    verbose=True
+)
+
+# 获取结构化响应
+result = analyst.kickoff("分析 2025 年 AI 市场")
+
+# 访问结构化数据
+print(f"关键趋势：{result.pydantic.key_trends}")
+print(f"机会：{result.pydantic.opportunities}")
+print(f"推荐：{result.pydantic.recommendation}")
+```
+
+## 最佳实践
+
+### 1. 代理命名约定
+
+使用清晰、描述性的名称作为您的仓库代理：
+- 好：`market-research-agent`、`content-writer-agent`
+- 避免：`agent1`、`temp-agent`
+
+### 2. 仓库文档
+
+为每个仓库代理包含全面的描述：
+- **角色和目标**：清晰定义代理的用途
+- **背景**：描述代理的经验和方法
+- **工具**：列出代理可用的特定工具
+
+### 3. 访问控制
+
+使用 CrewAI CLI 管理组织权限：
+```bash
+# 查看当前组织
+crewai org current
+
+# 切换到不同组织
+crewai org switch <org_id>
+
+# 列出所有可用组织
+crewai org list
+```
+
+### 4. 权限管理
+
+确保只有授权的团队成员可以修改仓库代理：
+- 限制仓库修改权限
+- 实施代理更新的审批工作流
+- 使用组织范围的政策
+
+## 组织管理
+
+要切换组织或查看当前组织，请使用 CrewAI CLI：
+
+```bash
+# 查看当前组织
+crewai org current
+
+# 切换到不同组织
+crewai org switch <org_id>
+
+# 列出所有可用组织
+crewai org list
+```
+
+<Note>
+从仓库加载代理时，您必须经过身份验证并切换到正确的组织。如果您遇到错误，请检查您的身份验证状态和组织设置，使用上面的 CLI 命令。
+</Note>
+
+## 相关功能
+
+<CardGroup cols={3}>
+
+  <Card title="部署团队" icon="rocket">
+    href="/zh/enterprise/guides/deploy-crew"
+  >
+    从 GitHub 或 ZIP 文件部署团队。
+  </Card>
+
+  <Card title="自动化触发器" icon="trigger">
+    href="/zh/enterprise/guides/automation-triggers"
+  >
+    通过 webhook 或 API 触发自动化。
+  </Card>
+
+  <Card title="Webhook 自动化" icon="webhook">
+    href="/zh/enterprise/guides/webhook-automation"
+  >
+    将实时事件和更新流式传输到您的系统。
+  </Card>
+
+</CardGroup>

@@ -1,0 +1,47 @@
+---
+title: Datadog 集成
+description: 了解如何将 Datadog 与 CrewAI 集成，以将 LLM 可观察性追踪提交到 Datadog。
+icon: dog
+mode: "wide"
+---
+
+# 将 Datadog 与 CrewAI 集成
+
+本指南将演示如何将 [Datadog LLM Observability](https://docs.datadoghq.com/llm_observability/) 与 **CrewAI** 集成。通过本指南的结尾，您将能够将 LLM 可观察性追踪提交到 Datadog，并在 Datadog LLM Observability 的[代理执行视图](https://docs.datadoghq.com/llm_observability/monitoring/agent_monitoring/) 中查看您的 CrewAI 代理运行。
+
+> **什么是 Datadog LLM Observability？** [Datadog LLM Observability](https://www.datadoghq.com/product/llm-observability/) 帮助 AI 工程师、数据科学家和应用开发者快速开发、评估和监控 LLM 应用程序。自信地提高输出质量、性能、成本以及通过结构化实验、跨 AI 代理的端到端追踪和评估的整体风险。
+
+## 入门
+
+### 安装依赖项
+
+```shell
+pip install ddtrace crewai crewai-tools
+```
+
+### 设置环境变量
+
+如果您没有 Datadog API 密钥，可以[创建账户](https://www.datadoghq.com/)并[获取您的 API 密钥](https://docs.datadoghq.com/account_management/api-app-keys/#api-keys)。您还需要在以下环境变量中指定 ML Application 名称。ML Application 是与特定 LLM 可观察性追踪关联的 LLM 应用程序分组。请参阅 [ML Application 命名指南](https://docs.datadoghq.com/llm_observability/instrumentation/sdk?tab=python#application-naming-guidelines) 了解有关 ML Application 名称限制的更多信息。
+
+```shell
+export DD_API_KEY=<YOUR_DD_API_KEY>
+export DD_SITE=<YOUR_DD_SITE>
+export DD_LLMOBS_ENABLED=true
+export DD_LLMOBS_ML_APP=<YOUR_ML_APP_NAME>
+export DD_LLMOBS_AGENTLESS_ENABLED=true
+export DD_APM_TRACING_ENABLED=false
+```
+
+此外，配置任何 LLM 提供商 API 密钥
+
+```shell
+export OPENAI_API_KEY=<YOUR_OPENAI_API_KEY>
+export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
+export GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
+...
+```
+
+### 创建 CrewAI 代理应用程序
+
+```python
+```

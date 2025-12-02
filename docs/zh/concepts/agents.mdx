@@ -1,0 +1,99 @@
+---
+title: 代理
+description: 在 CrewAI 框架内创建和管理代理的详细指南。
+icon: robot
+mode: "wide"
+---
+
+## 代理概览
+
+在 CrewAI 框架中，`Agent` 是一个自主单元，可以：
+- 执行特定任务
+- 根据其角色和目标做出决策
+- 使用工具完成目标
+- 与其他代理沟通和协作
+- 维护交互记忆
+- 在允许时委派任务
+
+<Tip>
+将代理视为具有特定技能、专业知识和责任的专业团队成员。例如，`研究员`代理可能擅长收集和分析信息，而`作家`代理可能更擅长创建内容。
+</Tip>
+
+<Note type="info" title="企业增强：可视化代理构建器">
+CrewAI AOP 包含一个可视化代理构建器，简化了代理创建和配置，无需编写代码。可视化设计您的代理并实时测试它们。
+
+![Visual Agent Builder Screenshot](/images/enterprise/crew-studio-interface.png)
+
+可视化代理构建器支持：
+- 使用基于表单的界面进行直观代理配置
+- 实时测试和验证
+- 具有预配置代理类型的模板库
+- 轻松自定义代理属性和行为
+</Note>
+
+## 代理属性
+
+| 属性                               | 参数                | 类型                          | 描述                                                                                                          |
+| :-------------------------------------- | :----------------------- | :---------------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| **角色**                                | `role`                   | `str`                         | 定义代理在团队中的功能和专业知识。                                                           |
+| **目标**                                | `goal`                   | `str`                         | 指导代理决策的个人目标。                                                     |
+| **背景故事**                           | `backstory`              | `str`                         | 为代理提供上下文和个性，丰富交互。                                                |
+| **LLM** _(可选)_                    | `llm`                    | `Union[str, LLM, Any]`        | 为代理提供支持的语言模型。默认为 `OPENAI_MODEL_NAME` 或 "gpt-4" 中指定的模型。              |
+| **工具** _(可选)_                  | `tools`                  | `List[BaseTool]`              | 代理可用或可执行的功能/函数。默认为空列表。                                          |
+| **函数调用 LLM** _(可选)_   | `function_calling_llm`   | `Optional[Any]`               | 用于工具调用的语言模型，如果指定则覆盖团队的 LLM。                                                   |
+| **最大迭代次数** _(可选)_         | `max_iter`               | `int`                         | 代理必须提供最佳答案前的最大迭代次数。默认为 20。                                      |
+| **最大 RPM** _(可选)_                | `max_rpm`                | `Optional[int]`               | 每分钟最大请求数以避免速率限制。                                                                     |
+| **最大执行时间** _(可选)_     | `max_execution_time`     | `Optional[int]`               | 任务执行的最大时间（秒）。                                                                         |
+| **详细** _(可选)_                | `verbose`                | `bool`                        | 启用详细执行日志以进行调试。默认为 False。                                                       |
+| **允许委派** _(可选)_       | `allow_delegation`       | `bool`                        | 允许代理将任务委派给其他代理。默认为 False。                                                  |
+| **步骤回调** _(可选)_          | `step_callback`          | `Optional[Any]`               | 在每个代理步骤后调用的函数，覆盖团队回调。                                                       |
+| **缓存** _(可选)_                  | `cache`                  | `bool`                        | 启用工具使用缓存。默认为 True。                                                                       |
+| **系统模板** _(可选)_        | `system_template`        | `Optional[str]`               | 代理的自定义系统提示模板。                                                                          |
+| **提示模板** _(可选)_        | `prompt_template`        | `Optional[str]`               | 代理的自定义提示模板。                                                                                 |
+| **响应模板** _(可选)_      | `response_template`      | `Optional[str]`               | 代理的自定义响应模板。                                                                               |
+| **允许代码执行** _(可选)_   | `allow_code_execution`   | `Optional[bool]`              | 启用代理的代码执行。默认为 False。                                                                |
+| **最大重试限制** _(可选)_        | `max_retry_limit`        | `int`                         | 发生错误时的最大重试次数。默认为 2。                                                         |
+| **尊重上下文窗口** _(可选)_ | `respect_context_window` | `bool`                        | 通过总结保持在上下文窗口大小下的消息。默认为 True。                                              |
+| **代码执行模式** _(可选)_    | `code_execution_mode`    | `Literal["safe", "unsafe"]`   | 代码执行模式：'safe'（使用 Docker）或 'unsafe'（直接）。默认为 'safe'。                               |
+| **多模态** _(可选)_             | `multimodal`             | `bool`                        | 代理是否支持多模态功能。默认为 False。                                                  |
+| **注入日期** _(可选)_            | `inject_date`            | `bool`                        | 是否自动将当前日期注入任务。默认为 False。                                         |
+| **日期格式** _(可选)_            | `date_format`            | `str`                         | 启用 inject_date 时的日期格式字符串。默认为 "%Y-%m-%d"（ISO 格式）。                               |
+| **推理** _(可选)_              | `reasoning`              | `bool`                        | 代理在执行任务前是否应反思并创建计划。默认为 False。                         |
+| **最大推理尝试次数** _(可选)_ | `max_reasoning_attempts` | `Optional[int]`               | 执行任务前的最大推理尝试次数。如果为 None，将尝试直到就绪。                         |
+| **嵌入器** _(可选)_               | `embedder`               | `Optional[Dict[str, Any]]`    | 代理使用的嵌入器配置。                                                                     |
+| **知识源** _(可选)_      | `knowledge_sources`      | `Optional[List[BaseKnowledgeSource]]` | 代理可用的知识源。                                                                     |
+| **使用系统提示** _(可选)_      | `use_system_prompt`      | `Optional[bool]`              | 是否使用系统提示（支持 o1 模型）。默认为 True。                                                 |
+
+## 创建代理
+
+在 CrewAI 中有两种创建代理的方式：使用 **YAML 配置（推荐）** 或 **直接在代码中定义**。
+
+### YAML 配置（推荐）
+
+使用 YAML 配置提供了一种更清洁、更易维护的方式来定义代理。我们强烈建议在您的 CrewAI 项目中使用此方法。
+
+按照 [安装](/zh/installation) 部分中概述的方式创建您的 CrewAI 项目后，导航到 `src/latest_ai_development/config/agents.yaml` 文件并修改模板以匹配您的要求。
+
+<Note>
+您的 YAML 文件中的变量（如 `{topic}`）将在运行团队时用您的输入值替换：
+```python Code
+crew.kickoff(inputs={'topic': 'AI 代理'})
+```
+</Note>
+
+以下是如何使用 YAML 配置代理的示例：
+
+```yaml agents.yaml
+# src/latest_ai_development/config/agents.yaml
+researcher:
+  role: >
+    {topic} 高级数据研究员
+  goal: >
+    揭示 {topic} 的最新发展
+  backstory: >
+    您是一位经验丰富的研究员，擅长发现 {topic} 的最新发展。
+    以能够找到最相关信息并以清晰简洁的方式呈现而闻名。
+
+reporting_analyst:
+  role: >
+    {topic} 报告分析师

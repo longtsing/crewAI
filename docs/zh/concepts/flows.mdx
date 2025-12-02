@@ -1,0 +1,97 @@
+---
+title: 流程
+description: 学习如何使用 CrewAI 流程创建和管理 AI 工作流。
+icon: arrow-progress
+mode: "wide"
+---
+
+## 概览
+
+CrewAI 流程是一个强大的功能，旨在简化 AI 工作流的创建和管理。流程允许开发者高效地组合和协调编码任务和团队，为构建复杂的 AI 自动化提供了强大的框架。
+
+流程允许您创建结构化的、事件驱动的工作流。它们提供了一种无缝的方式来连接多个任务、管理状态，并控制您的 AI 应用程序中的执行流程。使用流程，您可以轻松设计和实现利用 CrewAI 功能全部潜力的多步骤流程。
+
+1. **简化工作流创建**：轻松链接多个团队和任务以创建复杂的 AI 工作流。
+
+2. **状态管理**：流程使在工作流的不同任务之间管理和共享状态变得非常容易。
+
+3. **事件驱动架构**：基于事件驱动模型构建，允许动态和响应式工作流。
+
+4. **灵活控制流程**：在您的工作流中实现条件逻辑、循环和分支。
+
+## 入门
+
+让我们创建一个简单的流程，您将在其中使用 OpenAI 在一个任务中生成随机城市，然后使用该城市在另一个任务中生成有趣的事实。
+
+```python Code
+
+from crewai.flow.flow import Flow, listen, start
+from dotenv import load_dotenv
+from litellm import completion
+
+class ExampleFlow(Flow):
+    model = "gpt-4o-mini"
+
+    @start()
+    def generate_city(self):
+        print("启动流程")
+        # 每个流程状态自动获得唯一 ID
+        print(f"流程状态 ID: {self.state['id']}")
+
+        response = completion(
+            model=self.model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": "返回世界上的一个随机城市名称。",
+                },
+            ],
+        )
+
+        random_city = response["choices"][0]["message"]["content"]
+        # 在我们的状态中存储城市
+        self.state["city"] = random_city
+        print(f"随机城市: {random_city}")
+
+        return random_city
+
+    @listen(generate_city)
+    def generate_fun_fact(self, random_city):
+        response = completion(
+            model=self.model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"告诉我一个关于 {random_city} 的有趣事实",
+                },
+            ],
+        )
+
+        fun_fact = response["choices"][0]["message"]["content"]
+        # 在我们的状态中存储有趣的事实
+        self.state["fun_fact"] = fun_fact
+        return fun_fact
+
+
+flow = ExampleFlow()
+flow.plot()
+result = flow.kickoff()
+
+print(f"生成的有趣事实: {result}")
+```
+![Flow Visual image](/images/crewai-flow-1.png)
+在上面的示例中，我们创建了一个简单的流程，使用 OpenAI 生成随机城市，然后生成关于该城市的有趣事实。该流程由两个任务组成：`generate_city` 和 `generate_fun_fact`。`generate_city` 任务是流程的起点，而 `generate_fun_fact` 任务监听 `generate_city` 任务的输出。
+
+每个流程实例自动在其状态中接收唯一标识符（UUID），这有助于跟踪和管理流程执行。状态还可以存储在整个流程执行期间持续存在的额外数据（如生成的城市和有趣的事实）。
+
+当您运行流程时，它将：
+1. 为流程状态生成唯一 ID
+2. 生成随机城市并存储在状态中
+3. 生成关于该城市的有趣事实并存储在状态中
+4. 将结果打印到控制台
+
+状态的唯一 ID 和存储的数据可用于跟踪流程执行和维护任务之间的上下文。
+
+**注意：** 确保您已设置 `.env` 文件来存储您的 `OPENAI_API_KEY`。此密钥是向 OpenAI API 进行身份验证请求所必需的。
+
+### @start()

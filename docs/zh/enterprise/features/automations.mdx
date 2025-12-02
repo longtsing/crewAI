@@ -1,0 +1,118 @@
+---
+title: 自动化
+description: '在一个地方管理、部署和监控您的实时团队（自动化）。'
+icon: "rocket"
+mode: "wide"
+---
+
+## 概述
+
+自动化是您的实时团队运营中心，用于管理、部署和监控已部署的团队。使用它通过 GitHub 或 ZIP 文件部署，管理环境变量，按需重新部署，并监控每个自动化状态。
+
+<Frame>
+  ![自动化概览](/images/enterprise/automations-overview.png)
+</Frame>
+
+## 部署方式
+
+### 从 GitHub 部署
+
+使用此方法进行版本控制的项目和持续部署：
+
+<Steps>
+  <Step title="连接 GitHub">
+    点击 <b>配置 GitHub</b> 并授权访问。
+  </Step>
+  <Step title="选择仓库和分支">
+    选择您要部署的 <b>仓库</b> 和 <b>分支</b>。
+  </Step>
+  <Step title="启用自动部署（可选）">
+    开启 <b>自动部署新提交</b> 以在每次推送时发布更新。
+  </Step>
+  <Step title="添加环境变量">
+    单独或使用 <b>批量视图</b> 添加多个变量。
+  </Step>
+  <Step title="部署">
+    点击 <b>部署</b> 来创建您的实时团队自动化。
+  </Step>
+</Steps>
+
+<Frame>
+  ![GitHub 部署](/images/enterprise/deploy-from-github.png)
+</Frame>
+
+### 从 ZIP 部署
+
+无需 Git——上传压缩项目包以快速交付：
+
+<Steps>
+  <Step title="选择文件">
+    从您的计算机选择 ZIP 压缩包。
+  </Step>
+  <Step title="添加环境变量">
+    提供任何所需的变量或密钥。
+  </Step>
+  <Step title="部署">
+    点击 <b>部署</b> 来创建您的实时团队自动化。
+  </Step>
+</Steps>
+
+<Frame>
+  ![ZIP 部署](/images/enterprise/deploy-from-zip.png)
+</Frame>
+
+## 自动化仪表板
+
+表格列出所有实时团队自动化及其关键详细信息：
+
+- **CREW**：自动化名称
+- **STATUS**：在线 / 失败 / 进行中
+- **URL**：启动/状态端点
+- **TOKEN**：自动化令牌
+- **ACTIONS**：重新部署、删除和更多操作
+
+使用顶部右侧控件按名称、状态或来源筛选自动化：
+- 按名称搜索
+- 按状态筛选
+- 按来源（GitHub / Studio / ZIP）筛选
+
+使用右上角的 **选项**下拉菜单：
+- `与此团队聊天`：与自动化交互
+- `导出 React 组件`：获取 React 组件代码
+- `导出为 MCP`：导出为 MCP 服务器
+
+<Frame>
+  ![自动化表格](/images/enterprise/automations-table.png)
+</Frame>
+
+## 最佳实践
+
+- 优先考虑使用 GitHub 部署进行版本控制
+- 在自动部署开启前测试自动化
+- 为环境变量使用描述性名称
+- 监控自动化状态和性能
+- 使用自动化触发器实现事件驱动的工作流
+
+## 相关功能
+
+<CardGroup cols={3}>
+
+  <Card title="部署团队" icon="rocket">
+    href="/zh/enterprise/guides/deploy-crew"
+  >
+    从 GitHub 或 ZIP 文件部署团队。
+  </Card>
+
+  <Card title="自动化触发器" icon="trigger">
+    href="/zh/enterprise/guides/automation-triggers"
+  >
+    通过 webhook 或 API 触发自动化。
+  </Card>
+
+  <Card title="Webhook 自动化" icon="webhook">
+    href="/zh/enterprise/guides/webhook-automation"
+  >
+    将实时事件和更新流式传输到您的系统。
+  </Card>
+
+</CardGroup>

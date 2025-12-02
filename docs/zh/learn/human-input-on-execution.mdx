@@ -1,0 +1,99 @@
+---
+title: 执行时的人工输入
+description: 在复杂的决策过程中将 CrewAI 与人工输入集成，并充分利用代理的属性和工具的全部功能。
+icon: user-plus
+mode: "wide"
+---
+
+## 代理执行中的人工输入
+
+人工输入在几个代理执行场景中至关重要，允许代理在必要时请求额外信息或澄清。
+此功能在复杂的决策过程中特别有用，或者当代理需要更多详细信息来有效完成任务时。
+
+## 在 CrewAI 中使用人工输入
+
+要将人工输入集成到代理执行中，在任务定义中设置 `human_input` 标志。启用时，代理在交付最终答案前提示用户输入。
+此输入可以提供额外上下文、澄清模糊性或验证代理的输出。
+
+### 示例：
+
+```shell
+pip install crewai
+```
+
+```python Code
+import os
+from crewai import Agent, Task, Crew
+from crewai_tools import SerperDevTool
+
+os.environ["SERPER_API_KEY"] = "您的密钥"  # serper.dev API 密钥
+os.environ["OPENAI_API_KEY"] = "您的密钥"
+
+# 加载工具
+search_tool = SerperDevTool()
+
+# 定义具有角色、目标和附加属性的代理
+researcher = Agent(
+    role='Senior Research Analyst',
+    goal='Uncover cutting-edge developments in AI and data science',
+    backstory=(
+        "You are a Senior Research Analyst at a leading tech think tank. "
+        "Your expertise lies in identifying emerging trends and technologies in AI and data science. "
+        "You have a knack for dissecting complex data and presenting actionable insights."
+    ),
+    verbose=True,
+    allow_delegation=False,
+    tools=[search_tool]
+)
+writer = Agent(
+    role='Tech Content Strategist',
+    goal='Craft compelling content on tech advancements',
+    backstory=(
+        "You are a renowned Tech Content Strategist, known for your insightful and engaging articles on technology and innovation. "
+        "With a deep understanding of tech industry, you transform complex concepts into compelling narratives."
+    ),
+    verbose=True,
+    allow_delegation=True,
+    tools=[search_tool],
+    cache=False,  # 为此代理禁用缓存
+)
+
+# 为您的代理创建任务
+task1 = Task(
+    description=(
+        "Conduct a comprehensive analysis of latest advancements in AI in 2025. "
+        "Identify key trends, breakthrough technologies, and potential industry impacts. "
+        "Compile your findings in a detailed report. "
+        "Make sure to check with a human if draft is good before finalizing your answer"
+    ),
+    expected_output='A comprehensive full report on latest AI advancements in 2025, leave nothing out',
+    agent=researcher,
+    human_input=True
+)
+
+task2 = Task(
+    description=(
+        "Using insights from researcher's report, develop an engaging blog post that highlights most significant AI advancements. "
+        "Your post should be informative yet accessible, catering to a tech-savvy audience. "
+        "Aim for a narrative that captures essence of these breakthroughs and their implications for future."
+    ),
+    expected_output='A compelling 3 paragraphs blog post formatted as markdown about latest AI advancements in 2025',
+    agent=writer,
+    human_input=True
+)
+
+# 使用顺序流程实例化您的团队
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[task1, task2],
+    verbose=True,
+    memory=True,
+    planning=True  # 为团队启用规划功能
+)
+
+# 让您的团队开始工作！
+result = crew.kickoff()
+
+print("######################")
+print(result)
+```

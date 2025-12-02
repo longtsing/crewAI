@@ -1,0 +1,115 @@
+---
+title: 引入您自己的代理
+description: 学习如何将您自己的代理引入在团队中工作。
+icon: robots
+mode: "wide"
+---
+
+互操作性是 CrewAI 中的一个核心概念。本指南将向您展示如何将来自不同框架的代理（如 Langgraph 代理、OpenAI 代理等）引入在团队中工作的代理。
+
+## 代理适配器指南（Langgraph 代理、OpenAI 代理等...）
+
+我们要求 3 个适配器将来自不同框架的代理转换为在团队中工作的代理。
+
+### 1. BaseAgentAdapter
+2. BaseToolAdapter  
+3. BaseConverter
+
+### BaseAgentAdapter
+
+此抽象类定义了所有代理适配器必须实现的通用接口和功能。它扩展了 BaseAgent 以在与 CrewAI 框架保持兼容性的同时，添加特定于您外部代理的适配器特定要求。
+
+#### 必需方法：
+
+1. `def configure_tools`
+2. `def configure_structured_output`
+
+### 创建您的适配器
+
+要将来自不同框架的代理（例如，Langgraph、Autogen、OpenAI Assistants）集成到 CrewAI 中，您需要通过继承自 `BaseAgentAdapter` 来创建自定义适配器。此适配器作为兼容层发挥作用，在 CrewAI 接口和您外部代理的特定要求之间进行转换。
+
+以下是实现自定义适配器的方法：
+
+1. **继承自 `BaseAgentAdapter`**：
+    ```python
+    from crewai.agents.agent_adapters.base_agent_adapter import BaseAgentAdapter
+    from crewai.tools import BaseTool
+    from typing import List, Optional, Any, Dict
+
+    class MyCustomAgentAdapter(BaseAgentAdapter):
+        # ... 实现细节 ...
+    ```
+
+2. **实现 `__init__`**：
+    构造函数应调用父类构造函数 `super().__init__(**kwargs)` 并执行任何特定于您外部代理的初始化。您可以在 CrewAI 的 `Agent` 初始化期间传递的可选 `agent_config` 字典来配置您的适配器和底层代理。
+
+    ```python
+    def __init__(self, agent_config: Optional[Dict[str, Any]] = None, **kwargs: Any):
+        super().__init__(agent_config=agent_config, **kwargs)
+        # 在这里初始化您的外部代理，可能使用 Agent_config
+    ```
+
+3. **实现必要方法**：
+    根据您的代理要求实现 `configure_tools` 和 `configure_structured_output` 方法。
+
+4. **测试和验证**：
+    确保您的适配器按预期工作并与 CrewAI 框架兼容。
+
+## 适配器使用示例
+
+以下是如何在团队中使用代理适配器的示例：
+
+```python
+from crewai import Agent, Crew, Task
+from my_custom_agent_adapter import MyCustomAgentAdapter
+
+# 使用适配器创建代理
+my_agent = MyCustomAgentAdapter(
+    agent_config={
+        "endpoint": "https://my-agent-endpoint.com",
+        "api_key": "your-api-key"
+    }
+)
+
+# 在团队中使用代理
+crew = Crew(
+    agents=[my_agent],
+    tasks=[...],
+    verbose=True
+)
+```
+
+## 支持的代理类型
+
+### Langgraph 代理
+用于 Langgraph 框架构建的代理。
+
+### OpenAI 助手
+OpenAI 助手 API 兼容的代理。
+
+### 自定义代理
+任何遵循适当接口的自定义代理实现。
+
+## 配置和自定义
+
+通过适配器模式，您可以：
+
+- **配置端点**：指定外部代理的 URL
+- **管理身份验证**：处理 API 密钥和认证
+- **自定义工具映射**：将 CrewAI 工具映射到代理特定的功能
+- **结构化输出处理**：定义代理输出的处理方式
+
+## 集成步骤
+
+1. **实现适配器**：创建继承自 BaseAgentAdapter 的类
+2. **配置代理**：使用适当的配置参数实例化适配器
+3. **创建团队**：将适配器传递给 Crew 构造函数
+4. **测试集成**：验证端到端功能
+
+## 最佳实践
+
+1. **遵循接口契约**：确保所有必需方法都正确实现
+2. **适当的错误处理**：提供优雅的错误处理和回退
+3. **配置管理**：使用配置字典管理设置
+4. **文档化**：记录集成要求和配置选项
+5. **版本兼容性**：确保您的适配器与 CrewAI 框架版本兼容

@@ -1,0 +1,105 @@
+---
+title: "CrewAI 文档"
+description: "构建协作式 AI 代理、团队和流程 — 从第一天起即可投入生产。"
+icon: "house"
+mode: "wide"
+---
+
+<div
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 20,
+    textAlign: 'center',
+    padding: '48px 24px',
+    borderRadius: 16,
+    background: 'linear-gradient(180deg, rgba(235,102,88,0.12) 0%, rgba(201,76,60,0.08) 100%)',
+    border: '1px solid rgba(235,102,88,0.18)'
+  }}
+>
+  <img src="/images/crew_only_logo.png" alt="CrewAI" width="250" height="100" />
+  <div style={{ maxWidth: 720 }}>
+    <h1 style={{ marginBottom: 12 }}>自信地部署多代理系统</h1>
+    <p style={{ color: 'var(--mint-text-2)' }}>
+      设计代理，编排团队，自动化流程，内置防护、记忆、知识和可观测性。
+    </p>
+  </div>
+
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+    <a className="button button-primary" href="/zh/quickstart">开始使用</a>
+    <a className="button" href="/zh/changelog">查看更新日志</a>
+    <a className="button" href="/zh/api-reference/introduction">API 参考</a>
+  </div>
+
+</div>
+
+<div style={{ marginTop: 32 }} />
+
+## 开始使用
+
+<CardGroup cols={3}>
+  <Card title="介绍" href="/zh/introduction" icon="sparkles">
+    CrewAI 概念、架构概述，以及您可以使用代理、团队和流程构建什么。
+  </Card>
+  <Card title="安装" href="/zh/installation" icon="wrench">
+    通过 `uv` 安装，配置 API 密钥，为本地开发设置 CLI。
+  </Card>
+  <Card title="快速开始" href="/zh/quickstart" icon="rocket">
+    在几分钟内启动您的第一个团队。了解核心运行时、项目布局和开发循环。
+  </Card>
+</CardGroup>
+
+## 构建基础
+
+<CardGroup cols={3}>
+  <Card title="代理" href="/zh/concepts/agents" icon="users">
+    使用工具、记忆、知识和使用 Pydantic 的结构化输出组合代理。包括模板和最佳实践。
+  </Card>
+  <Card title="流程" href="/zh/concepts/flows" icon="arrow-progress">
+    编排开始/监听/路由步骤，管理状态，持久化执行，以及恢复长时间运行的工作流。
+  </Card>
+  <Card title="任务和流程" href="/zh/concepts/tasks" icon="check">
+    定义顺序、分层或混合流程，具有防护、回调和人在循环触发器。
+  </Card>
+</CardGroup>
+
+## 企业级之旅
+
+<CardGroup cols={3}>
+  <Card title="部署自动化" href="/zh/enterprise/features/automations" icon="server">
+    管理环境，安全重新部署，并直接从企业控制台监控实时运行。
+  </Card>
+  <Card title="触发器和流程" href="/zh/enterprise/guides/automation-triggers" icon="bolt">
+    连接 Gmail、Slack、Salesforce 等。自动将触发器有效负载传递给团队和流程。
+  </Card>
+  <Card title="团队管理" href="/zh/enterprise/guides/team-management" icon="users-gear">
+    邀请团队成员，配置 RBAC，并控制对生产自动化的访问。
+  </Card>
+</CardGroup>
+
+## 新功能
+
+<CardGroup cols={2}>
+  <Card title="触发器概览" href="/zh/enterprise/guides/automation-triggers" icon="sparkles">
+    Gmail、Drive、Outlook、Teams、OneDrive、HubSpot 等的统一概览 — 现在包含示例有效负载和团队。
+  </Card>
+  <Card title="集成工具" href="/zh/tools/integration/overview" icon="plug">
+    使用更新的集成工具包直接从您的团队调用现有的 CrewAI 自动化或 Amazon Bedrock 代理。
+  </Card>
+</CardGroup>
+
+<Callout title="探索真实世界的模式" icon="github">
+  浏览 <a href="/zh/examples/cookbooks">示例和食谱</a>，获取代理、流程和企业自动化的端到端参考实现。
+</Callout>
+
+## 保持联系
+
+<CardGroup cols={2}>
+  <Card title="在 GitHub 上给我们星标" href="https://github.com/crewAIInc/crewAI" icon="star">
+    如果 CrewAI 帮助您更快地部署，请给我们一个星标并与社区分享您的构建成果。
+  </Card>
+  <Card title="加入社区" href="https://community.crewai.com" icon="comments">
+    与其他构建者一起提问、展示工作流和请求功能。
+  </Card>
+</CardGroup>

@@ -1,0 +1,316 @@
+---
+title: 自定义提示词
+description: 深入了解 CrewAI 的底层提示词自定义，为不同模型和语言启用超级定制和复杂的用例。
+icon: message-pen
+mode: "wide"
+---
+
+## 为什么要自定义提示词？
+
+虽然 CrewAI 的默认提示词在许多场景下都很好用，但底层的自定义为更灵活和强大的智能体行为打开了大门。以下是你可能想要利用这种更深层次控制的原因：
+
+1. **优化特定 LLM** - 不同的模型（如 GPT-4、Claude 或 Llama）在针对其独特架构定制的提示词格式下表现更佳。
+2. **更改语言** - 构建完全使用英语以外语言运行的智能体，精确处理细微差别。
+3. **为复杂领域专门化** - 调整提示词以适应高度专业化的行业，如医疗保健、金融或法律。
+4. **调整语调和风格** - 使智能体更正式、随意、创意或分析性。
+5. **支持超级定制用例** - 利用高级提示词结构和格式来满足复杂、项目特定的要求。
+
+本指南探讨如何在更深层次上利用 CrewAI 的提示词，让你对智能体的思考和交互方式进行细粒度控制。
+
+## 理解 CrewAI 的提示词系统
+
+在底层，CrewAI 采用模块化的提示词系统，你可以广泛自定义：
+
+- **智能体模板** - 控制每个智能体处理其分配角色的方式。
+- **提示词片段** - 控制专门行为，如任务、工具使用和输出结构。
+- **错误处理** - 指导智能体如何响应失败、异常或超时。
+- **工具特定提示词** - 定义如何调用或使用工具的详细指令。
+
+查看 [CrewAI 仓库中的原始提示词模板](https://github.com/crewAIInc/crewAI/blob/main/src/crewai/translations/en.json) 以了解这些元素是如何组织的。从那里，你可以根据需要覆盖或调整它们以解锁高级行为。
+
+## 理解默认系统指令
+
+<Warning>
+**生产环境透明度问题**：CrewAI 自动向你的提示词注入默认指令，这些指令你可能不知道。本节解释了底层发生了什么以及如何获得完全控制权。
+</Warning>
+
+当你使用 `role`、`goal` 和 `backstory` 定义智能体时，CrewAI 会自动添加控制格式和行为的额外系统指令。理解这些默认注入对于需要完全提示词透明度的生产系统至关重要。
+
+### CrewAI 自动注入什么
+
+根据你的智能体配置，CrewAI 添加不同的默认指令：
+
+#### 对于没有工具的智能体
+```text
+"我必须使用这些格式，我的工作依赖于此！"
+```
+
+#### 对于有工具的智能体
+```text
+"重要：在你的回复中使用以下格式：
+
+思考：你应该始终思考要做什么
+行动：要采取的行动，只有 [tool_names] 中的一个名称
+行动输入：行动的输入，只是一个简单的 JSON 对象..."
+```
+
+#### 对于结构化输出（JSON/Pydantic）
+```text
+"确保你的最终答案只包含以下格式的内容：{output_format}
+确保最终输出不包括任何代码块标记，如 ```json 或 ```python。"
+```
+
+### 查看完整系统提示词
+
+要看到发送到你的 LLM 的确切提示词，你可以检查生成的提示词：
+
+```python
+from crewai import Agent, Crew, Task
+from crewai.utilities.prompts import Prompts
+
+# 创建你的智能体
+agent = Agent(
+    role="数据分析师",
+    goal="分析数据并提供洞察",
+    backstory="你是一位拥有 10 年经验的专业数据分析师。",
+    verbose=True
+)
+
+# 创建示例任务
+task = Task(
+    description="分析销售数据并识别趋势",
+    expected_output="带有关键洞察和趋势的详细分析",
+    agent=agent
+)
+
+# 创建提示词生成器
+prompt_generator = Prompts(
+    agent=agent,
+    has_tools=len(agent.tools) > 0,
+    use_system_prompt=agent.use_system_prompt
+)
+
+# 生成并检查实际提示词
+generated_prompt = prompt_generator.task_execution()
+
+# 打印将发送到 LLM 的完整系统提示词
+if "system" in generated_prompt:
+    print("=== 系统提示词 ===")
+    print(generated_prompt["system"])
+    print("\n=== 用户提示词 ===")
+    print(generated_prompt["user"])
+else:
+    print("=== 完整提示词 ===")
+    print(generated_prompt["prompt"])
+
+# 你也可以看到任务描述是如何格式化的
+print("\n=== 任务上下文 ===")
+print(f"任务描述：{task.description}")
+print(f"预期输出：{task.expected_output}")
+```
+
+### 覆盖默认指令
+
+你有几个选项来获得对提示词的完全控制：
+
+#### 选项 1：自定义模板（推荐）
+```python
+from crewai import Agent
+
+# 定义你自己的系统模板，不带默认指令
+custom_system_template = """你是 {role}。{backstory}
+你的目标是：{goal}
+
+自然地、对话式地回应。专注于提供有用、准确的信息。"""
+
+custom_prompt_template = """任务：{input}
+
+请认真地完成此任务。"""
+
+agent = Agent(
+    role="研究助理",
+    goal="帮助用户找到准确信息",
+    backstory="你是一个有帮助的研究助理。",
+    system_template=custom_system_template,
+    prompt_template=custom_prompt_template,
+    use_system_prompt=True  # 使用独立的系统/用户消息
+)
+```
+
+#### 选项 2：自定义提示词文件
+创建 `custom_prompts.json` 文件来覆盖特定的提示词片段：
+
+```json
+{
+  "slices": {
+    "no_tools": "\n以自然、对话的方式提供你的最佳答案。",
+    "tools": "\n你可以访问这些工具：{tools}\n\n在有帮助时使用它们，但要自然地回应。",
+    "formatted_task_instructions": "将你的回复格式化为：{output_format}"
+  }
+}
+```
+
+然后在你的 crew 中使用它：
+
+```python
+crew = Crew(
+    agents=[agent],
+    tasks=[task],
+    prompt_file="custom_prompts.json",
+    verbose=True
+)
+```
+
+#### 选项 3：为 o1 模型禁用系统提示词
+```python
+agent = Agent(
+    role="分析师",
+    goal="分析数据",
+    backstory="专业分析师",
+    use_system_prompt=False  # 禁用系统提示词分离
+)
+```
+
+### 使用可观察性工具调试
+
+对于生产环境透明度，集成可观察性平台以监控所有提示词和 LLM 交互。这允许你看到发送到你的 LLM 的确切提示词（包括默认指令）。
+
+请参阅我们的[可观察性文档](/zh/observability/overview) 了解与各种平台的详细集成指南，包括 Langfuse、MLflow、Weights & Biases 和自定义日志解决方案。
+
+### 生产环境最佳实践
+
+1. **在生产环境部署前始终检查生成的提示词**
+2. **当你需要完全控制提示词内容时使用自定义模板**
+3. **集成可观察性工具**进行持续的提示词监控（参见[可观察性文档](/zh/observability/overview)）
+4. **测试不同的 LLM**，因为默认指令在不同模型上可能工作方式不同
+5. **记录你的提示词自定义**以保持团队透明度
+
+<Tip>
+默认指令的存在是为了确保一致的智能体行为，但它们可能会干扰领域特定要求。使用上述自定义选项在生产系统中保持对智能体行为的完全控制。
+</Tip>
+
+## 管理提示词文件的最佳实践
+
+当进行底层提示词自定义时，遵循这些指南以保持有序和可维护：
+
+1. **保持文件分离** - 将自定义提示词存储在主代码库之外的专用 JSON 文件中。
+2. **版本控制** - 在仓库中跟踪更改，确保清晰记录随时间推移的提示词调整。
+3. **按模型或语言组织** - 使用命名方案如 `prompts_llama.json` 或 `prompts_es.json` 来快速识别专门配置。
+4. **记录更改** - 提供注释或维护 README 详细说明自定义的目的和范围。
+5. **最小化更改** - 只覆盖你真正需要调整的特定片段，保持其他所有内容的默认功能。
+
+## 自定义提示词的最简单方法
+
+一种直接的方法是为你想要覆盖的提示词创建 JSON 文件，然后指向你的 Crew 该文件：
+
+1. 使用更新的提示词片段制作 JSON 文件。
+2. 通过 Crew 中的 `prompt_file` 参数引用该文件。
+
+然后 CrewAI 将你的自定义与默认值合并，所以你不必重新定义每个提示词。方法如下：
+
+### 示例：基本提示词自定义
+
+创建 `custom_prompts.json` 文件，包含你想要修改的提示词。确保列出它应包含的所有顶级提示词，而不仅仅是你的更改：
+
+```json
+{
+  "slices": {
+    "format": "回复时，请遵循此结构：\n\n思考：你的逐步思考\n行动：你正在使用的任何工具\n结果：你的最终答案或结论"
+  }
+}
+```
+
+然后这样集成：
+
+```python
+from crewai import Agent, Crew, Task, Process
+
+# 像往常一样创建智能体和任务
+researcher = Agent(
+    role="研究专家",
+    goal="查找量子计算信息",
+    backstory="你是一位量子物理专家",
+    verbose=True
+)
+
+research_task = Task(
+    description="研究量子计算应用",
+    expected_output="实际应用的摘要",
+    agent=researcher
+)
+
+# 使用你的自定义提示词文件创建 crew
+crew = Crew(
+    agents=[researcher],
+    tasks=[research_task],
+    prompt_file="path/to/custom_prompts.json",
+    verbose=True
+)
+
+# 运行 crew
+result = crew.kickoff()
+```
+
+通过这些简单的编辑，你获得了对智能体如何沟通和解决任务的底层控制。
+
+## 针对特定模型优化
+
+不同的模型在不同结构的提示词上表现更好。进行更深的调整可以通过使你的提示词与模型的细微差别对齐来显著提高性能。
+
+### 示例：Llama 3.3 提示词模板
+
+例如，当处理 Meta 的 Llama 3.3 时，更深层次的自定义可能反映在 https://www.llama.com/docs/model-cards-and-prompt-formats/llama3_1/#prompt-template 描述的推荐结构。
+
+这里有一个示例突出展示如何在代码中微调智能体以利用 Llama 3.3：
+
+```python
+from crewai import Agent, Crew, Task, Process
+from crewai_tools import DirectoryReadTool, FileReadTool
+
+# 定义系统、用户（提示词）和助手（响应）消息的模板
+system_template = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>{{ .System }}<|eot_id|>"""
+prompt_template = """<|start_header_id|>user<|end_header_id|>{{ .Prompt }}<|eot_id|>"""
+response_template = """<|start_header_id|>assistant<|end_header_id|>{{ .Response }}<|eot_id|>"""
+
+# 使用 Llama 特定布局创建智能体
+principal_engineer = Agent(
+    role="首席工程师",
+    goal="监督 AI 架构并做出高级决策",
+    backstory="你是负责关键 AI 系统的负责人",
+    verbose=True,
+    llm="groq/llama-3.3-70b-versatile",  # 使用 Llama 3 模型
+    system_template=system_template,
+    prompt_template=prompt_template,
+    response_template=response_template,
+    tools=[DirectoryReadTool(), FileReadTool()]
+)
+
+# 定义示例任务
+engineering_task = Task(
+    description="审查 AI 实现文件以寻找潜在改进",
+    expected_output="关键发现和建议的摘要",
+    agent=principal_engineer
+)
+
+# 为任务创建 Crew
+llama_crew = Crew(
+    agents=[principal_engineer],
+    tasks=[engineering_task],
+    process=Process.sequential,
+    verbose=True
+)
+
+# 执行 crew
+result = llama_crew.kickoff()
+print(result.raw)
+```
+
+通过这种更深层的配置，你可以对基于 Llama 的工作流程进行全面的底层控制，而不需要单独的 JSON 文件。
+
+## 结论
+
+CrewAI 中的底层提示词自定义为超级定制、复杂的用例打开了大门。通过建立组织良好的提示词文件（或直接内联模板），你可以适应各种模型、语言和专业领域。这种灵活性水平确保你可以精确打造你需要的 AI 行为，同时知道 CrewAI 在你不覆盖它们时仍然提供可靠的默认值。
+
+<Check>
+你现在有了在 CrewAI 中进行高级提示词自定义的基础。无论你是为模型特定结构还是领域特定约束进行调整，这种底层方法让你能够以高度专业化的方式塑造智能体交互。
+</Check>

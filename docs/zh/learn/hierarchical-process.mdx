@@ -1,0 +1,111 @@
+---
+title: 层次化流程
+description: 在您的 CrewAI 项目中理解和应用层次化流程的综合指南，更新以反映最新的编码实践和功能。
+icon: sitemap
+mode: "wide"
+---
+
+## 介绍
+
+CrewAI 中的层次化流程引入了一种结构化的任务管理方法，模拟传统组织层次结构以实现高效的任务委托和执行。
+这种系统化的工作流程通过确保任务以最佳效率和准确性处理来增强项目结果。
+
+<Tip>
+    层次化流程旨在利用像 GPT-4 这样的高级模型，在处理复杂任务时优化令牌使用同时提高效率。
+</Tip>
+
+## 层次化流程概述
+
+默认情况下，CrewAI 中的任务通过顺序流程管理。但是，采用层次化方法允许在任务管理中建立清晰的层次结构，
+其中"管理器"代理协调工作流程、委托任务并验证结果以实现流畅有效的执行。这个管理器代理现在可以是由
+CrewAI 自动创建或由用户明确设置。
+
+### 核心功能
+
+- **任务委托**：管理器代理根据团队成员的角色和能力在他们之间分配任务。
+- **结果验证**：管理者评估结果以确保它们符合所需标准。
+- **高效工作流程**：模拟企业结构，为任务管理提供有组织的方法。
+- **系统提示处理**：可选择指定系统是否应使用预定义提示。
+- **停用词控制**：可选择指定是否应使用停用词，支持包括 o1 模型在内的各种模型。
+- **上下文窗口尊重**：通过启用对上下文窗口的尊重来优先考虑重要上下文，这现在是默认行为。
+- **委托控制**：委托现在默认禁用以给用户明确的控制权。
+- **每分钟最大请求数**：可配置选项来设置每分钟最大请求数。
+- **最大迭代次数**：限制获得最终答案的最大迭代次数。
+
+## 实现层次化流程
+
+要利用层次化流程，必须将 process 属性明确设置为 `Process.hierarchical`，因为默认行为是 `Process.sequential`。
+定义一个具有指定管理器的团队并建立清晰的指挥链。
+
+<Tip>
+    在代理级别分配工具以便在管理者指导下由指定代理进行任务委托和执行。
+    工具也可以在任务级别指定，以便在任务执行期间对工具可用性进行精确控制。
+</Tip>
+
+<Tip>
+    配置 `manager_llm` 参数对于层次化流程至关重要。
+    系统需要设置管理器 LLM 才能正常运行，确保量身定制的决策。
+</Tip>
+
+```python Code
+from crewai import Crew, Process, Agent
+
+# 代理使用背景故事、缓存和详细模式等属性定义
+researcher = Agent(
+    role='Researcher',
+    goal='Conduct in-depth analysis',
+    backstory='Experienced data analyst with a knack for uncovering hidden trends.',
+)
+writer = Agent(
+    role='Writer',
+    goal='Create engaging content',
+    backstory='Creative writer passionate about storytelling in technical domains.',
+)
+
+# 使用层次化流程和额外配置建立团队
+project_crew = Crew(
+    tasks=[...],  # 在管理者监督下要委托和执行的任务
+    agents=[researcher, writer],
+    manager_llm="gpt-4o",  # 指定管理者应使用的 LLM
+    process=Process.hierarchical,  
+    planning=True, 
+)
+```
+
+### 使用自定义管理器代理
+
+或者，您可以创建一个具有特定属性的自定义管理器代理，专为您的项目管理需求量身定制。这给您更多对管理者行为和能力的控制。
+
+```python
+# 定义自定义管理器代理
+manager = Agent(
+    role="Project Manager",
+    goal="Efficiently manage the crew and ensure high-quality task completion",
+    backstory="You're an experienced project manager, skilled in overseeing complex projects and guiding teams to success.",
+    allow_delegation=True,
+)
+
+# 在团队中使用自定义管理器
+project_crew = Crew(
+    tasks=[...],
+    agents=[researcher, writer],
+    manager_agent=manager,  # 使用您的自定义管理器代理
+    process=Process.hierarchical,
+    planning=True,
+)
+```
+
+<Tip>
+    有关创建和定制管理器代理的更多详细信息，请查看[自定义管理器代理文档](/zh/learn/custom-manager-agent)。
+</Tip>
+
+### 工作流程实战
+
+1. **任务分配**：管理者策略性地分配任务，考虑每个代理的能力和可用工具。
+2. **执行和审查**：代理完成任务，可选择异步执行和回调函数以实现流畅的工作流程。
+3. **顺序任务进展**：尽管是层次化流程，任务遵循逻辑顺序以便平滑进展，由管理者的监督促进。
+
+## 结论
+
+在 CrewAI 中采用层次化流程，通过正确的配置和对系统能力的理解，促进项目管理的一种有组织和高效的方法。
+利用高级功能和定制来根据您的特定需求定制工作流程，确保最佳任务执行和项目成功。

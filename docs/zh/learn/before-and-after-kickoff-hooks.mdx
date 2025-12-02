@@ -1,0 +1,66 @@
+---
+title: 启动前和启动后钩子
+description: 学习如何在 CrewAI 中使用启动前和启动后钩子。
+mode: "wide"
+---
+
+CrewAI 提供了钩子，允许您在团队启动前和启动后执行代码。这些钩子对于预处理输入或后处理结果很有用。
+
+## 启动前钩子
+
+启动前的钩子在团队开始其任务之前执行。它接收输入字典并可以在将其传递给团队之前修改它。您可以使用此钩子来设置环境、加载必要数据或预处理输入。这在输入数据可能需要在被团队处理之前进行丰富或验证的场景中很有用。
+
+以下是在您的 `crew.py` 中定义启动前函数的示例：
+
+```python
+from crewai import CrewBase
+from crewai.project import before_kickoff
+
+@CrewBase
+class MyCrew:
+    @before_kickoff
+    def prepare_data(self, inputs):
+        # 预处理或修改输入
+        inputs['processed'] = True
+        return inputs
+
+#...
+```
+
+在此示例中，prepare_data 函数通过添加指示输入已被处理的新键值对来修改输入。
+
+## 启动后钩子
+
+启动后的钩子在团队完成其任务后执行。它接收结果对象，其中包含团队执行的输出。此钩子理想用于后处理结果，如日志记录、数据转换或进一步分析。
+
+以下是如何在您的 `crew.py` 中定义启动后函数的：
+
+```python
+from crewai import CrewBase
+from crewai.project import after_kickoff
+
+@CrewBase
+class MyCrew:
+    @after_kickoff
+    def log_results(self, result):
+        # 记录或修改结果
+        print(f"团队执行完成，结果：{result}")
+        return result
+
+# ...
+```
+
+使用钩子的好处：
+
+- **输入预处理**：在处理前验证或丰富数据
+- **结果后处理**：对输出执行自定义操作
+- **灵活集成**：与外部系统连接
+- **调试支持**：添加日志记录和监控
+- **动态配置**：根据运行时条件调整行为
+
+## 最佳实践
+
+1. **保持钩子轻量级**：避免在钩子中执行繁重操作
+2. **适当的错误处理**：在钩子中包含适当的异常处理
+3. **文档化**：清楚记录每个钩子的目的和预期行为
+4. **测试钩子**：独立测试钩子功能以确保它们按预期工作

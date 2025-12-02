@@ -1,0 +1,264 @@
+---
+title: Asana 集成
+description: "通过 Asana 集成为 CrewAI 实现团队任务和项目协调。"
+icon: "circle"
+mode: "wide"
+---
+
+## 概述
+
+通过 Asana 集成使你的智能体能够管理任务、项目和团队协调。创建任务、更新项目状态、管理分配，并通过 AI 驱动的自动化简化你的团队工作流程。
+
+## 先决条件
+
+在使用 Asana 集成之前，确保你已经：
+
+- 拥有活跃订阅的 [CrewAI AOP](https://app.crewai.com) 账户
+- 拥有适当权限的 Asana 账户
+- 通过[集成页面](https://app.crewai.com/crewai_plus/connectors)连接了你的 Asana 账户
+
+## 设置 Asana 集成
+
+### 1. 连接你的 Asana 账户
+
+1. 导航到 [CrewAI AOP 集成](https://app.crewai.com/crewai_plus/connectors)
+2. 在身份验证集成部分找到 **Asana**
+3. 点击**连接**并完成 OAuth 流程
+4. 授予任务和项目管理所需的必要权限
+5. 从[集成设置](https://app.crewai.com/crewai_plus/settings/integrations)复制你的企业令牌
+
+### 2. 安装必需的包
+
+```bash
+uv add crewai-tools
+```
+
+### 3. 环境变量设置
+
+<Note>
+  要与 `Agent(apps=[])` 一起使用集成，你必须设置 `CREWAI_PLATFORM_INTEGRATION_TOKEN` 环境变量和你的企业令牌。
+</Note>
+
+```bash
+export CREWAI_PLATFORM_INTEGRATION_TOKEN="your_enterprise_token"
+```
+
+或者将其添加到你的 `.env` 文件：
+
+```
+CREWAI_PLATFORM_INTEGRATION_TOKEN=your_enterprise_token
+```
+
+## 可用操作
+
+<AccordionGroup>
+  <Accordion title="asana/create_comment">
+    **描述：**在 Asana 中创建评论。
+
+    **参数：**
+    - `task`（字符串，必需）：任务 ID - 评论将添加到的任务的 ID。评论将由当前经过身份验证的用户编写。
+    - `text`（字符串，必需）：文本（示例："这是一条评论。"）
+  </Accordion>
+
+  <Accordion title="asana/create_project">
+    **描述：**在 Asana 中创建项目。
+
+    **参数：**
+    - `name`（字符串，必需）：名称（示例："要购买的东西"）
+    - `workspace`（字符串，必需）：工作区 - 使用连接门户工作流程设置允许用户选择在哪个工作区创建项目。如果留空，则默认为用户的第一个工作区。
+    - `team`（字符串，可选）：团队 - 使用连接门户工作流程设置允许用户选择与哪个团队共享此项目。如果留空，则默认为用户的第一个团队。
+    - `notes`（字符串，可选）：笔记（示例："这些是我们需要购买的东西。"）
+  </Accordion>
+
+  <Accordion title="asana/get_projects">
+    **描述：**获取 Asana 中的项目列表。
+
+    **参数：**
+    - `archived`（字符串，可选）：已归档 - 选择 "true" 以显示已归档项目，"false" 以仅显示活动项目，或 "default" 以同时显示已归档和活动项目。
+      - 选项：`default`、`true`、`false`
+  </Accordion>
+
+  <Accordion title="asana/get_project_by_id">
+    **描述：**在 Asana 中按 ID 获取项目。
+
+    **参数：**
+    - `projectFilterId`（字符串，必需）：项目 ID。
+  </Accordion>
+
+  <Accordion title="asana/create_task">
+    **描述：**在 Asana 中创建任务。
+
+    **参数：**
+    - `name`（字符串，必需）：名称（示例："任务名称"）
+    - `workspace`（字符串，可选）：工作区 - 使用连接门户工作流程设置允许用户选择在哪个工作区创建任务。如果留空，则默认为用户的第一个工作区。
+    - `project`（字符串，可选）：项目 - 使用连接门户工作流程设置允许用户选择在哪个项目中创建此任务。
+    - `notes`（字符串，可选）：笔记。
+    - `dueOnDate`（字符串，可选）：截止日期 - 此任务截止的日期。不能与截止时间一起使用。（示例："YYYY-MM-DD"）
+    - `dueAtDate`（字符串，可选）：截止时间 - 此任务截止的日期和时间（ISO 时间戳）。不能与截止日期一起使用。（示例："2019-09-15T02:06:58.147Z"）
+    - `assignee`（字符串，可选）：被分配者 - 此任务将分配给的 Asana 用户的 ID。使用连接门户工作流程设置允许用户选择被分配者。
+    - `gid`（字符串，可选）：外部 ID - 来自你应用程序的 ID，用于与此任务关联。你可以使用此 ID 稍后同步对此任务的更新。
+  </Accordion>
+
+  <Accordion title="asana/update_task">
+    **描述：**在 Asana 中更新任务。
+
+    **参数：**
+    - `taskId`（字符串，必需）：任务 ID - 将要更新的任务的 ID。
+    - `completeStatus`（字符串，可选）：完成状态。
+      - 选项：`true`、`false`
+    - `name`（字符串，可选）：名称（示例："任务名称"）
+    - `notes`（字符串，可选）：笔记。
+    - `dueOnDate`（字符串，可选）：截止日期 - 此任务截止的日期。不能与截止时间一起使用。（示例："YYYY-MM-DD"）
+    - `dueAtDate`（字符串，可选）：截止时间 - 此任务截止的日期和时间（ISO 时间戳）。不能与截止日期一起使用。（示例："2019-09-15T02:06:58.147Z"）
+    - `assignee`（字符串，可选）：被分配者 - 此任务将分配给的 Asana 用户的 ID。使用连接门户工作流程设置允许用户选择被分配者。
+    - `gid`（字符串，可选）：外部 ID - 来自你应用程序的 ID，用于与此任务关联。你可以使用此 ID 稍后同步对此任务的更新。
+  </Accordion>
+
+  <Accordion title="asana/get_tasks">
+    **描述：**获取 Asana 中的任务列表。
+
+    **参数：**
+    - `workspace`（字符串，可选）：工作区 - 要在其上筛选任务的 工作区 ID。使用连接门户工作流程设置允许用户选择工作区。
+    - `project`（字符串，可选）：项目 - 要在其上筛选任务的 项目 ID。使用连接门户工作流程设置允许用户选择项目。
+    - `assignee`（字符串，可选）：被分配者 - 要在其上筛选任务的 被分配者 ID。使用连接门户工作流程设置允许用户选择被分配者。
+    - `completedSince`（字符串，可选）：自此完成 - 仅返回未完成或自此时间以来已完成的任务（ISO 或 Unix 时间戳）。（示例："2014-04-25T16:15:47-04:00"）
+  </Accordion>
+
+  <Accordion title="asana/get_tasks_by_id">
+    **描述：**在 Asana 中按 ID 获取任务列表。
+
+    **参数：**
+    - `taskId`（字符串，必需）：任务 ID。
+  </Accordion>
+
+  <Accordion title="asana/get_task_by_external_id">
+    **描述：**在 Asana 中按外部 ID 获取任务。
+
+    **参数：**
+    - `gid`（字符串，必需）：外部 ID - 此任务关联或同步的、来自你应用程序的 ID。
+  </Accordion>
+
+  <Accordion title="asana/add_task_to_section">
+    **描述：**在 Asana 中将任务添加到部分。
+
+    **参数：**
+    - `sectionId`（字符串，必需）：部分 ID - 要将此任务添加到的部分的 ID。
+    - `taskId`（字符串，必需）：任务 ID - 要添加的任务的 ID。（示例："1204619611402340"）
+    - `beforeTaskId`（字符串，可选）：之前任务 ID - 此部分中此任务将插入到之前的任务的 ID。不能与之后任务 ID 一起使用。（示例："1204619611402340"）
+    - `afterTaskId`（字符串，可选）：之后任务 ID - 此部分中此任务将插入到之后的任务的 ID。不能与之前任务 ID 一起使用。（示例："1204619611402340"）
+  </Accordion>
+
+  <Accordion title="asana/get_teams">
+    **描述：**获取 Asana 中的团队列表。
+
+    **参数：**
+    - `workspace`（字符串，必需）：工作区 - 返回此工作区中经授权用户可见的团队。
+  </Accordion>
+
+  <Accordion title="asana/get_workspaces">
+    **描述：**获取 Asana 中的工作区列表。
+
+    **参数：**无必需参数。
+  </Accordion>
+</AccordionGroup>
+
+## 使用示例
+
+### 基本 Asana 智能体设置
+
+```python
+from crewai import Agent, Task, Crew
+
+# 创建具有 Asana 功能的智能体
+asana_agent = Agent(
+    role="项目经理",
+    goal="在 Asana 中高效管理任务和项目",
+    backstory="一名专长于项目管理和任务协调的 AI 助手。",
+    apps=['asana']  # 所有 Asana 操作都将可用
+)
+
+# 创建新项目的任务
+create_project_task = Task(
+    description="在营销工作区创建一个名为 'Q1 营销活动' 的新项目",
+    agent=asana_agent,
+    expected_output="成功创建项目及项目 ID 的确认"
+)
+
+# 运行任务
+crew = Crew(
+    agents=[asana_agent],
+    tasks=[create_project_task]
+)
+
+crew.kickoff()
+```
+
+### 筛选特定的 Asana 工具
+
+```python
+from crewai import Agent, Task, Crew
+
+# 创建仅具有特定 Asana 操作的智能体
+task_manager_agent = Agent(
+    role="任务经理",
+    goal="高效创建和管理任务",
+    backstory="一名专注于任务创建和管理的 AI 助手。",
+    apps=[
+        'asana/create_task',
+        'asana/update_task',
+        'asana/get_tasks'
+    ]  # 特定的 Asana 操作
+)
+
+# 创建并分配任务的任务
+task_management = Task(
+    description="创建一个名为 '审查季度报告' 的任务并将其分配给适当的团队成员",
+    agent=task_manager_agent,
+    expected_output="任务已创建并成功分配"
+)
+
+crew = Crew(
+    agents=[task_manager_agent],
+    tasks=[task_management]
+)
+
+crew.kickoff()
+```
+
+### 高级项目管理
+
+```python
+from crewai import Agent, Task, Crew
+
+project_coordinator = Agent(
+    role="项目协调员",
+    goal="协调项目活动并跟踪进度",
+    backstory="一名经验丰富的项目协调员，确保项目顺利进行。",
+    apps=['asana']
+)
+
+# 涉及多个 Asana 操作的复杂任务
+coordination_task = Task(
+    description="""
+    1. 获取工作区中的所有活动项目
+    2. 对于每个项目，获取未完成任务列表
+    3. 在 '管理报告' 项目中创建摘要报告任务
+    4. 向过期任务添加评论以请求状态更新
+    """,
+    agent=project_coordinator,
+    expected_output="摘要报告已创建，且已发送过期任务的状态更新请求"
+)
+
+crew = Crew(
+    agents=[project_coordinator],
+    tasks=[coordination_task]
+)
+
+crew.kickoff()
+```
+
+## 获取帮助
+
+<Card title="需要帮助？" icon="headset" href="mailto:support@crewai.com">
+  联系我们的支持团队以获取 Asana 集成设置或故障排除方面的帮助。
+</Card>

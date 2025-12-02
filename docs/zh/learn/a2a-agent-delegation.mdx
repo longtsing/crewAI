@@ -1,0 +1,142 @@
+---
+title: 代理到代理 (A2A) 协议
+description: 启用 CrewAI 代理将任务委派给远程 A2A 兼容代理以进行专门处理
+icon: network-wired
+mode: "wide"
+---
+
+## A2A 代理委派
+
+CrewAI 支持代理到代理 (A2A) 协议，允许代理将任务委派给远程专业化代理。代理的 LLM 自动决定是直接处理任务还是将任务委派给 A2A 代理，基于任务要求。
+
+<Note>
+  A2A 委派需要 `a2a-sdk` 包。安装：`uv add 'crewai[a2a]'` 或 `pip install 'crewai[a2a]'`
+</Note>
+
+## 工作原理
+
+当代理配置了 A2A 功能时：
+
+1. LLM 分析每个任务
+2. 它决定是：
+   - 使用自身能力直接处理任务
+   - 将任务委派给远程 A2A 代理进行专门处理
+3. 如果委派，代理通过协议与远程 A2A 代理通信
+4. 结果返回到 CrewAI 工作流
+
+## 基本配置
+
+通过设置 `a2a` 参数为代理配置 A2A 委派：
+
+```python Code
+from crewai import Agent, Crew, Task
+from crewai.a2a import A2AConfig
+
+agent = Agent(
+    role="研究协调员",
+    goal="高效协调研究任务",
+    backstory="擅长委派给专业化研究代理的专家",
+    llm="gpt-4o",
+    a2a=A2AConfig(
+        endpoint="https://example.com/.well-known/agent-card.json",
+        timeout=120,
+        max_turns=10
+    )
+)
+
+task = Task(
+    description="研究量子计算的最新发展",
+    expected_output="综合研究报告",
+    agent=agent
+)
+```
+
+## 启动前的钩子
+
+启动前的钩子在团队开始执行任务之前执行。它接收输入字典并可以在将其传递给团队之前修改它。您可以使用此钩子来设置环境、加载必要数据或预处理输入。这在输入数据可能需要在被团队处理之前进行丰富或验证的场景中很有用。
+
+以下是在您的 `crew.py` 中定义启动前函数的示例：
+
+```python
+from crewai import CrewBase
+from crewai.project import before_kickoff
+
+@CrewBase
+class MyCrew:
+    @before_kickoff
+    def prepare_data(self, inputs):
+        # 预处理或修改输入
+        inputs['processed'] = True
+        return inputs
+
+#...
+```
+
+在此示例中，prepare_data 函数通过添加指示输入已被处理的新键值对来修改输入。
+
+## 启动后的钩子
+
+启动后的钩子在团队完成其任务后执行。它接收结果对象，其中包含团队执行的输出。此钩子理想用于后处理结果，如日志记录、数据转换或进一步分析。
+
+以下是如何在您的 `crew.py` 中定义启动后函数的：
+
+```python
+from crewai import CrewBase
+from crewai.project import after_kickoff
+
+@CrewBase
+class MyCrew:
+    @after_kickoff
+    def log_results(self, result):
+        # 记录或修改结果
+        print(f"团队执行完成，结果：{result}")
+        return result
+
+# ...
+```
+
+## 带来自有代理的团队
+
+CrewAI 强调互操作性是一个核心概念。本指南将向您展示如何将来自不同框架的代理（如 Langgraph 代理、OpenAI 代理等）引入在团队中工作的代理。
+
+### 代理适配器指南（Langgraph 代理、OpenAI 代理等...）
+
+我们要求 3 个适配器将来自不同框架的代理转换为在团队中工作的代理。
+
+### 1. BaseAgentAdapter
+2. BaseToolAdapter  
+3. BaseConverter
+
+### BaseAgentAdapter
+
+此抽象类定义了所有代理适配器必须实现的通用接口和功能。它扩展了 BaseAgent 以在与 CrewAI 框架保持兼容性的同时，添加特定于您外部代理的适配器特定要求。
+
+#### 必需方法：
+
+1. `def configure_tools`
+2. `def configure_structured_output`
+
+### 创建您的适配器
+
+要将来自不同框架的代理（例如，Langgraph、Autogen、OpenAI Assistants）集成到 CrewAI 中，您需要通过继承自 `BaseAgentAdapter` 来创建自定义适配器。此适配器作为兼容层发挥作用，在 CrewAI 接口和您外部代理的特定要求之间进行转换。
+
+以下是实现自定义适配器的方法：
+
+1. **继承自 `BaseAgentAdapter`**：
+    ```python
+    from crewai.agents.agent_adapters.base_agent_adapter import BaseAgentAdapter
+    from crewai.tools import BaseTool
+    from typing import List, Optional, Any, Dict
+
+    class MyCustomAgentAdapter(BaseAgentAdapter):
+        # ... 实现细节 ...
+    ```
+
+2. **实现 `__init__`**：
+    构造函数应调用父类构造函数 `super().__init__(**kwargs)` 并执行任何特定于您外部代理的初始化。您可以在 CrewAI 的 `Agent` 初始化期间传递的可选 `agent_config` 字典来配置您的适配器和底层代理。
+
+    ```python
+    def __init__(self, agent_config: Optional[Dict[str, Any]] = None, **kwargs: Any):
+        super().__init__(agent_config=agent_config, **kwargs)
+        # 在这里初始化您的外部代理，可能使用 Agent_config
+    ```

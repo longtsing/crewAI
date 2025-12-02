@@ -1,0 +1,367 @@
+---
+title: 快速开始
+description: 在 5 分钟内使用 CrewAI 构建您的第一个 AI 代理。
+icon: rocket
+mode: "wide"
+---
+
+## 构建您的第一个 CrewAI 代理
+
+让我们创建一个简单的团队，帮助我们为给定主题或科目 `研究` 和 `报告` `最新的 AI 发展`。
+
+在我们继续之前，请确保您已完成 CrewAI 的安装。
+如果尚未安装，可以按照 [安装指南](/zh/installation) 进行安装。
+
+按照以下步骤开始 Crewing！ 🚣‍♂️
+
+<Steps>
+  <Step title="创建您的团队">
+  在终端中运行以下命令创建一个新的团队项目。
+  这将创建一个名为 `latest-ai-development` 的新目录，包含您团队的基本结构。
+    <CodeGroup>
+      ```shell Terminal
+      crewai create crew latest-ai-development
+      ```
+    </CodeGroup>
+  </Step>
+  <Step title="导航到您的新团队项目">
+    <CodeGroup>
+      ```shell Terminal
+      cd latest_ai_development
+      ```
+    </CodeGroup>
+  </Step>
+  <Step title="修改您的 `agents.yaml` 文件">
+  <Tip>
+  您也可以根据需要修改代理以适应您的用例，或按原样复制粘贴到您的项目中。
+  在您的 `agents.yaml` 和 `tasks.yaml` 文件中插入的任何变量，如 `{topic}`，将被 `main.py` 文件中变量的值替换。
+  </Tip>
+    ```yaml agents.yaml
+    # src/latest_ai_development/config/agents.yaml
+    researcher:
+      role: >
+        {topic} 高级数据研究员
+      goal: >
+        揭示 {topic} 的最新发展
+      backstory: >
+        您是一位经验丰富的研究员，擅长发现 {topic} 的最新发展。
+        以能够找到最相关信息并以清晰简洁的方式呈现而闻名。
+
+    reporting_analyst:
+      role: >
+        {topic} 报告分析师
+      goal: >
+        基于 {topic} 数据分析和研究结果创建详细报告
+      backstory: >
+        您是一位细致的分析师，对细节有敏锐的眼光。以能够将复杂数据
+        转换为清晰简洁的报告而闻名，使他人容易理解并根据您提供的信息采取行动。
+    ```
+  </Step>
+  <Step title="修改您的 `tasks.yaml` 文件">
+    ```yaml tasks.yaml
+    # src/latest_ai_development/config/tasks.yaml
+    research_task:
+      description: >
+        对 {topic} 进行彻底研究
+        确保您找到任何有趣和相关的信息，因为当前年份是 2025 年。
+      expected_output: >
+        包含 10 个关于 {topic} 最相关信息的要点列表
+      agent: researcher
+
+    reporting_task:
+      description: >
+        审查您获得的上下文并将每个主题扩展为报告的完整部分。
+        确保报告详细并包含任何和所有相关信息。
+      expected_output: >
+        一个完整的报告，包含主要主题，每个主题都有完整的信息部分。
+        格式化为 markdown，不包含 '```'
+      agent: reporting_analyst
+      output_file: report.md
+    ```
+  </Step>
+  <Step title="修改您的 `crew.py` 文件">
+    ```python crew.py
+    # src/latest_ai_development/crew.py
+    from crewai import Agent, Crew, Process, Task
+    from crewai.project import CrewBase, agent, crew, task
+    from crewai_tools import SerperDevTool
+    from crewai.agents.agent_builder.base_agent import BaseAgent
+    from typing import List
+
+    @CrewBase
+    class LatestAiDevelopmentCrew():
+      """LatestAiDevelopment 团队"""
+
+      agents: List[BaseAgent]
+      tasks: List[Task]
+
+      @agent
+      def researcher(self) -> Agent:
+        return Agent(
+          config=self.agents_config['researcher'], # type: ignore[index]
+          verbose=True,
+          tools=[SerperDevTool()]
+        )
+
+      @agent
+      def reporting_analyst(self) -> Agent:
+        return Agent(
+          config=self.agents_config['reporting_analyst'], # type: ignore[index]
+          verbose=True
+        )
+
+      @task
+      def research_task(self) -> Task:
+        return Task(
+          config=self.tasks_config['research_task'], # type: ignore[index]
+        )
+
+      @task
+      def reporting_task(self) -> Task:
+        return Task(
+          config=self.tasks_config['reporting_task'], # type: ignore[index]
+          output_file='output/report.md' # 这是将包含最终报告的文件。
+        )
+
+      @crew
+      def crew(self) -> Crew:
+        """创建 LatestAiDevelopment 团队"""
+        return Crew(
+          agents=self.agents, # 由 @agent 装饰器自动创建
+          tasks=self.tasks, # 由 @task 装饰器自动创建
+          process=Process.sequential,
+          verbose=True,
+        )
+    ```
+  </Step>
+  <Step title="[可选] 添加团队前后函数">
+    ```python crew.py
+    # src/latest_ai_development/crew.py
+    from crewai import Agent, Crew, Process, Task
+    from crewai.project import CrewBase, agent, crew, task, before_kickoff, after_kickoff
+    from crewai_tools import SerperDevTool
+
+    @CrewBase
+    class LatestAiDevelopmentCrew():
+      """LatestAiDevelopment 团队"""
+
+      @before_kickoff
+      def before_kickoff_function(self, inputs):
+        print(f"启动前函数，输入为：{inputs}")
+        return inputs # 您可以返回输入或根据需要修改它们
+
+      @after_kickoff
+      def after_kickoff_function(self, result):
+        print(f"启动后函数，结果为：{result}")
+        return result # 您可以返回结果或根据需要修改它
+
+      # ... 剩余代码
+    ```
+  </Step>
+  <Step title="随意向您的团队传递自定义输入">
+  例如，您可以将 `topic` 输入传递给您的团队以自定义研究和报告。
+    ```python main.py
+    #!/usr/bin/env python
+    # src/latest_ai_development/main.py
+    import sys
+    from latest_ai_development.crew import LatestAiDevelopmentCrew
+
+    def run():
+      """
+      运行团队。
+      """
+      inputs = {
+        'topic': 'AI 代理'
+      }
+      LatestAiDevelopmentCrew().crew().kickoff(inputs=inputs)
+    ```
+  </Step>
+  <Step title="设置您的环境变量">
+  在运行您的团队之前，确保您在 `.env` 文件中设置了以下密钥作为环境变量：
+    - 一个 [Serper.dev](https://serper.dev/) API 密钥：`SERPER_API_KEY=YOUR_KEY_HERE`
+    - 您选择模型的配置，例如 API 密钥。请参阅 [LLM 设置指南](/zh/concepts/llms#setting-up-your-llm) 了解如何配置任何提供商的模型。
+  </Step>
+  <Step title="锁定并安装依赖项">
+    - 使用 CLI 命令锁定依赖项并安装它们：
+      <CodeGroup>
+        ```shell Terminal
+        crewai install
+        ```
+      </CodeGroup>
+    - 如果您有想要安装的额外包，可以通过运行以下命令来安装：
+      <CodeGroup>
+        ```shell Terminal
+        uv add <package-name>
+        ```
+      </CodeGroup>
+  </Step>
+  <Step title="运行您的团队">
+    - 要运行您的团队，在项目根目录执行以下命令：
+      <CodeGroup>
+        ```bash Terminal
+        crewai run
+        ```
+      </CodeGroup>
+  </Step>
+
+  <Step title="企业替代方案：在 Crew Studio 中创建">
+  对于 CrewAI AOP 用户，您可以无需编写代码创建相同的团队：
+
+  1. 登录您的 CrewAI AOP 账户（在 [app.crewai.com](https://app.crewai.com) 创建免费账户）
+  2. 打开 Crew Studio
+  3. 输入您要构建的自动化内容
+  4. 可视化创建您的任务并按顺序连接它们
+  5. 配置您的输入并点击"下载代码"或"部署"
+
+  ![Crew Studio Quickstart](/images/enterprise/crew-studio-interface.png)
+
+  <Card title="尝试 CrewAI AOP" icon="rocket" href="https://app.crewai.com">
+    在 CrewAI AOP 开始您的免费账户
+  </Card>
+  </Step>
+  <Step title="查看您的最终报告">
+  您应该在控制台中看到输出，并且 `report.md` 文件应该在项目根目录中创建，包含最终报告。
+
+  以下是报告应该是什么样子的示例：
+
+  <CodeGroup>
+    ```markdown output/report.md
+    # 2025 年 AI 代理的兴起和影响综合报告
+
+    ## 1. AI 代理简介
+    2025 年，人工智能（AI）代理在各行各业都处于创新的最前沿。作为能够执行通常需要人类认知的任务的智能系统，AI 代理正在为运营效率、决策制定和整体生产力的重大进步铺平道路，特别是在人力资源（HR）和金融等领域。本报告旨在详述 AI 代理的兴起、其框架、应用以及对劳动力的潜在影响。
+
+    ## 2. AI 代理的好处
+    AI 代理带来了许多正在改变传统工作环境的优势。主要好处包括：
+
+    - **任务自动化**：AI 代理可以执行重复性任务，如数据录入、调度和薪资处理，无需人工干预，大大减少了在这些活动上花费的时间和资源。
+    - **提高效率**：通过快速处理大型数据集并执行人类需要长得多的时间的分析，AI 代理提高了运营效率。这让团队能够专注于需要更高层次思维的战略任务。
+    - **增强决策制定**：AI 代理可以分析数据中的趋势和模式，提供见解，甚至建议行动，帮助利益相关者基于事实数据而不是直觉做出明智决策。
+
+    ## 3. 流行的 AI 代理框架
+    出现了几个框架来促进 AI 代理的开发，每个框架都有其独特的功能和能力。一些最流行的框架包括：
+
+    - **Autogen**：一个旨在通过代码生成自动化简化 AI 代理开发的框架。
+    - **Semantic Kernel**：专注于自然语言处理和理解，使代理能够更好地理解用户意图。
+    - **Promptflow**：为开发者提供创建能够无缝导航复杂交互的对话代理的工具。
+    - **Langchain**：专门利用各种 API 确保代理能够有效访问和利用外部数据。
+    - **CrewAI**：针对协作环境，CrewAI 通过 AI 驱动的见解促进沟通来加强团队合作。
+    - **MemGPT**：将内存优化架构与生成能力结合，实现与用户更个性化的交互。
+
+    这些框架使开发者能够构建多功能和智能的代理，能够吸引用户、执行高级分析，并执行与组织目标一致的各种任务。
+
+    ## 4. 人力资源中的 AI 代理
+    AI 代理正在通过自动化和优化关键功能彻底改变 HR 实践：
+
+    - **招聘**：AI 代理可以筛选简历、安排面试，甚至进行初始评估，从而加速招聘流程，同时最小化偏见。
+    - **继任规划**：AI 系统分析员工绩效数据和潜力，帮助组织识别未来领导者并规划适当的培训。
+    - **员工参与度**：AI 驱动的聊天机器人可以促进员工与管理层之间的反馈循环，促进开放文化并及时解决问题。
+
+    随着 AI 的不断发展，利用这些代理的 HR 部门可以在效率和员工满意度方面实现实质性改善。
+
+    ## 5. 金融中的 AI 代理
+    金融领域正在看到 AI 代理的广泛集成，这些代理增强了金融实践：
+
+    - **费用跟踪**：自动化系统管理和监控费用，标记异常并提供基于支出模式的建议。
+    - **风险评估**：AI 模型通过分析交易数据和行为模式来评估信用风险和发现潜在欺诈。
+    - **投资决策**：AI 代理基于历史数据和当前市场条件提供股票预测和分析，为投资者提供信息丰富的见解。
+
+    将 AI 代理纳入金融正在培育一个响应更迅速、风险意识更强的金融环境。
+
+    ## 6. 市场趋势和投资
+    AI 代理的增长吸引了大量投资，特别是在聊天机器人生成式 AI 技术日益流行的背景下。公司和企业家都热衷于探索这些系统的潜力，认识到其简化运营和改善客户参与的能力。
+
+    相反，像微软这样的公司正在采取举措将 AI 代理集成到其产品中，增强其 Copilot 365 应用程序。这一战略举措强调了现代工作场所中 AI 素养的重要性，并表明 AI 代理正在稳定为基本业务工具。
+
+    ## 7. 未来预测和影响
+    专家预测 AI 代理将改变工作生活的重要方面。当我们展望未来时，几个预期的变化包括：
+
+    - 在所有业务功能中增强 AI 代理的集成，创建利用各部门数据孤岛数据进行全面决策的互联系统。
+    - AI 技术的持续进步，导致更智能、适应性更强的代理，能够从用户交互中学习和演进。
+    - 增加监管审查以确保道德使用，特别是在数据隐私和员工监控方面，因为 AI 代理变得更加普遍。
+
+    为了保持竞争力并充分利用 AI 代理的潜力，组织必须对 AI 技术的最新发展保持警惕，并考虑在战略规划中持续学习和适应。
+
+    ## 8. 结论
+    AI 代理的出现无疑在 2025 年重塑了工作场所环境。凭借其自动化任务、提高效率和改善决策的能力，AI 代理在推动运营成功方面至关重要。组织必须拥抱并适应 AI 发展，才能在日益数字化的商业环境中茁壮成长。
+    ```
+  </CodeGroup>
+  </Step>
+</Steps>
+
+<Check>
+恭喜！
+
+您已成功设置团队项目，准备好开始构建自己的代理工作流！
+</Check>
+
+### 命名一致性说明
+
+您在 YAML 文件（`agents.yaml` 和 `tasks.yaml`）中使用的名称应该与 Python 代码中的方法名称匹配。
+例如，您可以从 `tasks.yaml` 文件中引用特定任务的代理。
+这种命名一致性允许 CrewAI 自动将您的配置与代码链接；否则，您的任务将无法正确识别引用。
+
+#### 示例引用
+
+<Tip>
+  注意我们如何在 `agents.yaml` 文件中使用与 `crew.py` 文件中方法名称相同的代理名称（`email_summarizer`）。
+</Tip>
+
+```yaml agents.yaml
+email_summarizer:
+    role: >
+      邮件摘要器
+    goal: >
+      将邮件摘要为简洁清晰的摘要
+    backstory: >
+      您将创建报告的 5 要点摘要
+    llm: provider/model-id  # 在此处添加您选择的模型
+```
+
+<Tip>
+  注意我们如何在 `tasks.yaml` 文件中使用与 `crew.py` 文件中方法名称相同的任务名称（`email_summarizer_task`）。
+</Tip>
+
+```yaml tasks.yaml
+email_summarizer_task:
+    description: >
+      将邮件摘要为 5 要点摘要
+    expected_output: >
+      邮件的 5 要点摘要
+    agent: email_summarizer
+    context:
+      - reporting_task
+      - research_task
+```
+
+## 部署您的团队
+
+将您的团队部署到生产环境的最简单方法是通过 [CrewAI AOP](http://app.crewai.com)。
+
+观看此视频教程，了解使用 CLI 将您的团队部署到 [CrewAI AOP](http://app.crewai.com) 的逐步演示。
+
+<iframe
+  className="w-full aspect-video rounded-xl"
+  src="https://www.youtube.com/embed/3EqSV-CYDZA"
+  title="CrewAI 部署指南"
+  frameBorder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowFullScreen
+></iframe>
+
+<CardGroup cols={2}>
+  <Card
+    title="在企业上部署"
+    icon="rocket"
+    href="http://app.crewai.com"
+  >
+    开始使用 CrewAI AOP 并只需几次点击即可在生产环境中部署您的团队。
+  </Card>
+  <Card
+    title="加入社区"
+    icon="comments"
+    href="https://community.crewai.com"
+  >
+    加入我们的开源社区讨论想法、分享您的项目，并与其他 CrewAI 开发者联系。
+  </Card>
+</CardGroup>

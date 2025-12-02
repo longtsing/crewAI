@@ -1,0 +1,621 @@
+---
+title: 构建你的第一个 Flow
+description: 学习如何创建结构化、事件驱动的工作流程，对执行有精确控制。
+icon: diagram-project
+mode: "wide"
+---
+
+## 通过 Flows 控制 AI 工作流程
+
+CrewAI Flows 代表了 AI 编排的下一个级别——将 AI agent crew 的协作力量与过程编程的精确性和灵活性相结合。虽然 crew 在 agent 协作方面表现出色，但 flows 为你提供了对 AI 系统不同组件如何以及何时交互的细粒度控制。
+
+在本指南中，我们将逐步创建一个强大的 CrewAI Flow，在任何主题上生成全面的学习指南。本教程将演示 Flows 如何通过组合常规代码、直接 LLM 调用和基于 crew 的处理，为你的 AI 工作流程提供结构化、事件驱动的控制。
+
+### 是什么让 Flows 强大
+
+Flows 使你能够：
+
+1. **组合不同的 AI 交互模式** - 使用 crew 进行复杂协作任务，直接 LLM 调用进行简单操作，常规代码进行过程逻辑
+2. **构建事件驱动系统** - 定义组件如何响应特定事件和数据变化
+3. **在组件之间维护状态** - 在应用程序的不同部分之间共享和转换数据
+4. **与外部系统集成** - 无缝连接你的 AI 工作流程与数据库、API 和用户界面
+5. **创建复杂的执行路径** - 设计条件分支、并行处理和动态工作流程
+
+### 你将构建和学到的内容
+
+在本指南结束时，你将拥有：
+
+1. **创建了一个复杂的内容生成系统**，结合用户输入、AI 规划和多智能体内容创建
+2. **编排了信息流**在你的系统不同组件之间
+3. **实现了事件驱动架构**，其中每个步骤响应前一步骤的完成
+4. **为更复杂的 AI 应用奠定了基础**，你可以扩展和自定义
+
+本指南创建者流程演示了可应用于创建更高级应用程序的基本模式，例如：
+
+- 结合多个专业化子系统的交互式 AI 助手
+- 具有 AI 增强转换的复杂数据处理管道
+- 与外部服务和 API 集成的自主智能体
+- 具有人机回环过程的多阶段决策系统
+
+让我们深入构建你的第一个 flow！
+
+## 先决条件
+
+在开始之前，确保你已经：
+
+1. 按照[安装指南](/zh/installation)安装了 CrewAI
+2. 按照 [LLM 设置指南](/zh/concepts/llms#setting-up-your-llm)在环境中设置了 LLM API 密钥
+3. 具备基本的 Python 知识
+
+## 步骤 1：创建新的 CrewAI Flow 项目
+
+首先，让我们使用 CLI 创建一个新的 CrewAI Flow 项目。此命令为你的 flow 设置一个带脚手架的项目，包含所有必要的目录和模板文件。
+
+```bash
+crewai create flow guide_creator_flow
+cd guide_creator_flow
+```
+
+这将生成一个具有你的 flow 所需基本结构的项目。
+
+<Frame caption="CrewAI 框架概述">
+  <img src="/images/flows.png" alt="CrewAI 框架概述" />
+</Frame>
+
+## 步骤 2：理解项目结构
+
+生成的项目具有以下结构。花点时间熟悉它，因为理解此结构将帮助你在未来创建更复杂的 flows。
+
+```
+guide_creator_flow/
+├── .gitignore
+├── pyproject.toml
+├── README.md
+├── .env
+├── main.py
+├── crews/
+│   └── poem_crew/
+│       ├── config/
+│       │   ├── agents.yaml
+│       │   └── tasks.yaml
+│       └── poem_crew.py
+└── tools/
+    └── custom_tool.py
+```
+
+这种结构为你的 flow 的不同组件提供了清晰的分离：
+- `main.py` 文件中的主要 flow 逻辑
+- `crews` 目录中的专业化 crew
+- `tools` 目录中的自定义工具
+
+我们将修改此结构以创建我们的指南创建者 flow，它将编排生成全面学习指南的过程。
+
+## 步骤 3：添加内容编写 Crew
+
+我们的 flow 将需要一个专门的 crew 来处理内容创建过程。让我们使用 CrewAI CLI 添加内容编写 crew：
+
+```bash
+crewai flow add-crew content-crew
+```
+
+此命令自动为你的 crew 创建必要的目录和模板文件。内容编写 crew 将负责编写和审查我们指南的部分，在由主应用程序编排的整体 flow 中工作。
+
+## 步骤 4：配置内容编写 Crew
+
+现在，让我们为内容编写 crew 修改生成的文件。我们将设置两个专业化的智能体——一个写作者和一个审阅者——它们将协作创建我们指南的高质量内容。
+
+1. 首先，更新智能体配置文件来定义我们的内容创建团队：
+
+   记住将 `llm` 设置为你正在使用的提供商。
+
+```yaml
+# src/guide_creator_flow/crews/content_crew/config/agents.yaml
+content_writer:
+  role: >
+    教育内容写作者
+  goal: >
+    创建引人入胜、信息丰富的内容，彻底解释分配的主题
+    并为读者提供有价值的洞察
+  backstory: >
+    你是一位才华横溢的教育写作者，专长于创建清晰、引人入胜
+    的内容。你有用易懂的语言解释复杂概念和
+    以帮助读者建立理解的方式组织信息的才能。
+  llm: provider/model-id  # 例如 openai/gpt-4o, google/gemini-2.0-flash, anthropic/claude...
+
+content_reviewer:
+  role: >
+    教育内容审阅者和编辑
+  goal: >
+    确保内容准确、全面、结构良好，并保持
+    与之前编写部分的一致性
+  backstory: >
+    你是一位一丝不苟的编辑，拥有多年审查教育
+    内容的经验。你对细节、清晰度和连贯性有敏锐的眼光。你擅长
+    改进内容，同时保持原作者的声音并确保
+    多个部分的质量一致性。
+  llm: provider/model-id  # 例如 openai/gpt-4o, google/gemini-2.0-flash, anthropic/claude...
+```
+
+这些智能体定义了将塑造我们的 AI 智能体如何处理内容创建的专业化角色和视角。注意每个智能体如何具有不同的目的和专业知识。
+
+2. 接下来，更新任务配置文件来定义具体的编写和审阅任务：
+
+```yaml
+# src/guide_creator_flow/crews/content_crew/config/tasks.yaml
+write_section_task:
+  description: >
+    为主题："{section_title}"编写全面的部分
+
+    部分描述：{section_description}
+    目标受众：{audience_level} 级学习者
+
+    你的内容应该：
+    1. 以部分主题的简要介绍开始
+    2. 用示例清楚解释所有关键概念
+    3. 在适当处包括实际应用或练习
+    4. 以要点摘要结束
+    5. 长度约 500-800 字
+
+    以 Markdown 格式化你的内容，使用适当的标题、列表和强调。
+
+    之前编写的部分：
+    {previous_sections}
+
+    确保你的内容与之前编写的部分保持一致
+    并在已经解释的概念基础上构建。
+  expected_output: >
+    一份结构良好、全面的部分，采用 Markdown 格式，彻底
+    解释主题并适合目标受众。
+  agent: content_writer
+
+review_section_task:
+  description: >
+    审阅并改进关于"{section_title}"的以下部分：
+
+    {draft_content}
+
+    目标受众：{audience_level} 级学习者
+
+    之前编写的部分：
+    {previous_sections}
+
+    你的审阅应该：
+    1. 修复任何语法或拼写错误
+    2. 改进清晰度和可读性
+    3. 确保内容全面和准确
+    4. 验证与之前编写部分的一致性
+    5. 增强结构和流程
+    6. 添加任何缺失的关键信息
+
+    以 Markdown 格式提供部分的改进版本。
+  expected_output: >
+    部分的改进、精炼版本，保持原始
+    结构但增强清晰度、准确性和一致性。
+  agent: content_reviewer
+  context:
+    - write_section_task
+```
+
+这些任务定义为我们的智能体提供详细指令，确保它们产出符合我们质量标准的内容。注意审阅任务中的 `context` 参数如何创建工作流程，其中审阅者可以访问写作者的输出。
+
+3. 现在，更新 crew 实现文件来定义我们的智能体和任务如何协同工作：
+
+```python
+# src/guide_creator_flow/crews/content_crew/content_crew.py
+from crewai import Agent, Crew, Process, Task
+from crewai.project import CrewBase, agent, crew, task
+from crewai.agents.agent_builder.base_agent import BaseAgent
+from typing import List
+
+@CrewBase
+class ContentCrew():
+    """内容编写 crew"""
+
+    agents: List[BaseAgent]
+    tasks: List[Task]
+
+    @agent
+    def content_writer(self) -> Agent:
+        return Agent(
+            config=self.agents_config['content_writer'], # type: ignore[index]
+            verbose=True
+        )
+
+    @agent
+    def content_reviewer(self) -> Agent:
+        return Agent(
+            config=self.agents_config['content_reviewer'], # type: ignore[index]
+            verbose=True
+        )
+
+    @task
+    def write_section_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['write_section_task'] # type: ignore[index]
+        )
+
+    @task
+    def review_section_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['review_section_task'] # type: ignore[index]
+            context=[self.write_section_task()]
+        )
+
+    @crew
+    def crew(self) -> Crew:
+        """创建内容编写 crew"""
+        return Crew(
+            agents=self.agents,
+            tasks=self.tasks,
+            process=Process.sequential,
+            verbose=True,
+        )
+```
+
+这个 crew 定义建立了智能体和任务之间的关系，设置了一个顺序过程，其中内容写作者创建草稿，然后审阅者改进它。虽然这个 crew 可以独立运行，但在我们的 flow 中它将编排为更大系统的一部分。
+
+## 步骤 5：创建 Flow
+
+现在是激动人心的部分——创建将编排整个指南创建过程的 flow。在这里我们将结合常规 Python 代码、直接 LLM 调用和我们的内容创建 crew 成为一个内聚的系统。
+
+我们的 flow 将：
+1. 获取用户关于主题和受众级别的输入
+2. 进行直接 LLM 调用以创建结构化的指南大纲
+3. 使用内容编写 crew 顺序处理每个部分
+4. 将所有内容组合成最终的综合文档
+
+让我们在 `main.py` 文件中创建我们的 flow：
+
+```python
+#!/usr/bin/env python
+import json
+import os
+from typing import List, Dict
+from pydantic import BaseModel, Field
+from crewai import LLM
+from crewai.flow.flow import Flow, listen, start
+from guide_creator_flow.crews.content_crew.content_crew import ContentCrew
+
+# 定义我们的结构化数据模型
+class Section(BaseModel):
+    title: str = Field(description="部分的标题")
+    description: str = Field(description="部分应涵盖内容的简要描述")
+
+class GuideOutline(BaseModel):
+    title: str = Field(description="指南的标题")
+    introduction: str = Field(description="主题的介绍")
+    target_audience: str = Field(description="目标受众的描述")
+    sections: List[Section] = Field(description="指南中的部分列表")
+    conclusion: str = Field(description="指南的结论或摘要")
+
+# 定义我们的 flow 状态
+class GuideCreatorState(BaseModel):
+    topic: str = ""
+    audience_level: str = ""
+    guide_outline: GuideOutline = None
+    sections_content: Dict[str, str] = {}
+
+class GuideCreatorFlow(Flow[GuideCreatorState]):
+    """用于创建任何主题全面指南的 Flow"""
+
+    @start()
+    def get_user_input(self):
+        """从用户获取关于指南主题和受众的输入"""
+        print("\n=== 创建你的全面指南 ===\n")
+
+        # 获取用户输入
+        self.state.topic = input("你想为哪个主题创建指南？")
+
+        # 获取带有验证的受众级别
+        while True:
+            audience = input("你的目标受众是谁？(beginner/intermediate/advanced) ").lower()
+            if audience in ["beginner", "intermediate", "advanced"]:
+                self.state.audience_level = audience
+                break
+            print("请输入 'beginner'、'intermediate' 或 'advanced'")
+
+        print(f"\n正在为{self.state.audience_level}受众创建关于{self.state.topic}的指南...\n")
+        return self.state
+
+    @listen(get_user_input)
+    def create_guide_outline(self, state):
+        """使用直接 LLM 调用创建指南的结构化大纲"""
+        print("正在创建指南大纲...")
+
+        # 初始化 LLM
+        llm = LLM(model="openai/gpt-4o-mini", response_format=GuideOutline)
+
+        # 为大纲创建消息
+        messages = [
+            {"role": "system", "content": "你是一个旨在输出 JSON 的有用助手。"},
+            {"role": "user", "content": f"""
+            为"{state.topic}"创建一个为{state.audience_level}级学习者的详细大纲。
+
+            大纲应包括：
+            1. 指南的引人注目的标题
+            2. 主题的介绍
+            3. 涵盖主题最重要方面的 4-6 个主要部分
+            4. 结论或摘要
+
+            对于每个部分，提供清晰的标题和它应涵盖内容的简要描述。
+            """}
+        ]
+
+        # 使用 JSON 响应格式进行 LLM 调用
+        response = llm.call(messages=messages)
+
+        # 解析 JSON 响应
+        outline_dict = json.loads(response)
+        self.state.guide_outline = GuideOutline(**outline_dict)
+
+        # 保存前确保输出目录存在
+        os.makedirs("output", exist_ok=True)
+
+        # 将大纲保存到文件
+        with open("output/guide_outline.json", "w") as f:
+            json.dump(outline_dict, f, indent=2)
+
+        print(f"指南大纲已创建，包含{len(self.state.guide_outline.sections)}个部分")
+        return self.state.guide_outline
+
+    @listen(create_guide_outline)
+    def write_and_compile_guide(self, outline):
+        """编写所有部分并编译指南"""
+        print("正在编写指南部分和编译...")
+        completed_sections = []
+
+        # 逐个处理部分以维持上下文流
+        for section in outline.sections:
+            print(f"正在处理部分：{section.title}")
+
+            # 从之前的部分构建上下文
+            previous_sections_text = ""
+            if completed_sections:
+                previous_sections_text = "# 之前编写的部分\n\n"
+                for title in completed_sections:
+                    previous_sections_text += f"## {title}\n\n"
+                    previous_sections_text += self.state.sections_content.get(title, "") + "\n\n"
+            else:
+                previous_sections_text = "尚未编写之前的部分。"
+
+            # 为此部分运行内容 crew
+            result = ContentCrew().crew().kickoff(inputs={
+                "section_title": section.title,
+                "section_description": section.description,
+                "audience_level": self.state.audience_level,
+                "previous_sections": previous_sections_text,
+                "draft_content": ""
+            })
+
+            # 存储内容
+            self.state.sections_content[section.title] = result.raw
+            completed_sections.append(section.title)
+            print(f"部分已完成：{section.title}")
+
+        # 编译最终指南
+        guide_content = f"# {outline.title}\n\n"
+        guide_content += f"## 介绍\n\n{outline.introduction}\n\n"
+
+        # 按顺序添加每个部分
+        for section in outline.sections:
+            section_content = self.state.sections_content.get(section.title, "")
+            guide_content += f"\n\n{section_content}\n\n"
+
+        # 添加结论
+        guide_content += f"## 结论\n\n{outline.conclusion}\n\n"
+
+        # 保存指南
+        with open("output/complete_guide.md", "w") as f:
+            f.write(guide_content)
+
+        print("\n完整指南已编译并保存到 output/complete_guide.md")
+        return "指南创建成功完成"
+
+def kickoff():
+    """运行指南创建者 flow"""
+    GuideCreatorFlow().kickoff()
+    print("\n=== Flow 完成 ===")
+    print("你的全面指南已在输出目录中准备就绪。")
+    print("打开 output/complete_guide.md 查看它。")
+
+def plot():
+    """生成 flow 的可视化"""
+    flow = GuideCreatorFlow()
+    flow.plot("guide_creator_flow")
+    print("Flow 可视化已保存到 guide_creator_flow.html")
+
+if __name__ == "__main__":
+    kickoff()
+```
+
+让我们分析这个 flow 中发生了什么：
+
+1. 我们定义 Pydantic 模型用于结构化数据，确保类型安全和清晰的数据表示
+2. 我们创建状态类在 flow 的不同步骤之间维护数据
+3. 我们实现三个主要 flow 步骤：
+   - 使用 `@start()` 装饰器获取用户输入
+   - 使用直接 LLM 调用创建指南大纲
+   - 使用我们的内容 crew 处理部分
+4. 我们使用 `@listen()` 装饰器建立步骤之间的事件驱动关系
+
+这就是 flow 的力量——将不同类型的处理（用户交互、直接 LLM 调用、基于 crew 的任务）组合成一个内聚的、事件驱动的系统。
+
+## 步骤 6：设置你的环境变量
+
+在项目根目录中创建 `.env` 文件，包含你的 API 密钥。请参阅 [LLM 设置指南](/zh/concepts/llms#setting-up-your-llm) 了解配置提供商的详细信息。
+
+```sh .env
+OPENAI_API_KEY=your_openai_api_key
+# 或
+GEMINI_API_KEY=your_gemini_api_key
+# 或
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+## 步骤 7：安装依赖项
+
+安装所需的依赖项：
+
+```bash
+crewai install
+```
+
+## 步骤 8：运行你的 Flow
+
+现在是时候看到你的 flow 在行动中！使用 CrewAI CLI 运行它：
+
+```bash
+crewai flow kickoff
+```
+
+当你运行此命令时，你将看到你的 flow 活跃起来：
+1. 它将提示你输入主题和受众级别
+2. 它将为你的指南创建结构化大纲
+3. 它将处理每个部分，内容写作者和审阅者在每个部分上协作
+4. 最后，它将所有内容编译成全面的指南
+
+这展示了 flows 编排涉及多个组件（AI 和非 AI）的复杂过程的力量。
+
+## 步骤 9：可视化你的 Flow
+
+flows 的强大功能之一是能够可视化其结构：
+
+```bash
+crewai flow plot
+```
+
+这将创建一个 HTML 文件，显示你的 flow 的结构，包括不同步骤之间的关系和它们之间流动的数据。这种可视化对于理解和复杂的 flows 可能非常宝贵。
+
+## 步骤 10：审查输出
+
+一旦 flow 完成，你将在 `output` 目录中找到两个文件：
+
+1. `guide_outline.json`：包含指南的结构化大纲
+2. `complete_guide.md`：包含所有部分的综合指南
+
+花点时间审查这些文件并欣赏你所构建的——一个结合用户输入、直接 AI 交互和协作智能体工作以产生复杂的、高质量输出的系统。
+
+## 可能的艺术：超越你的第一个 Flow
+
+你在本指南中学到的为创建更复杂的 AI 系统奠定了基础。这里有一些你可以扩展这个基本 flow 的方法：
+
+### 增强用户交互
+
+你可以创建更具交互性的 flows：
+- 用于输入和输出的 Web 界面
+- 实时进度更新
+- 交互式反馈和完善循环
+- 多阶段用户交互
+
+### 添加更多处理步骤
+
+你可以用额外的步骤扩展你的 flow：
+- 大纲创建前的研究
+- 插图图像生成
+- 技术指南的代码片段生成
+- 最终质量保证和事实核查
+
+### 创建更复杂的 Flows
+
+你可以实现更复杂的 flow 模式：
+- 基于用户偏好或内容类型的条件分支
+- 独立部分的并行处理
+- 带有反馈的迭代完善循环
+- 与外部 API 和服务的集成
+
+### 应用于不同领域
+
+相同的模式可以应用于为以下领域创建 flows：
+- **交互式讲故事**：基于用户输入创建个性化故事
+- **商业智能**：处理数据、生成洞察并创建报告
+- **产品开发**：促进构思、设计和规划
+- **教育系统**：创建个性化学习体验
+
+## 演示的关键功能
+
+本指南创建者 flow 演示了 CrewAI 的几个强大功能：
+
+1. **用户交互**：flow 直接从用户收集输入
+2. **直接 LLM 调用**：使用 LLM 类进行高效、单一目的的 AI 交互
+3. **使用 Pydantic 的结构化数据**：使用 Pydantic 模型确保类型安全
+4. **带上下文的顺序处理**：按顺序编写部分，为上下文提供之前的部分
+5. **多智能体 crew**：利用专业智能体（写作者和审阅者）进行内容创建
+6. **状态管理**：在过程的不同步骤之间维护状态
+7. **事件驱动架构**：使用 `@listen` 装饰器响应事件
+
+## 理解 Flow 结构
+
+让我们分解 flows 的关键组件，帮助你理解如何构建自己的：
+
+### 1. 直接 LLM 调用
+
+Flows 允许你在需要简单、结构化响应时直接调用语言模型：
+
+```python
+llm = LLM(
+    model="model-id-here",  # gpt-4o, gemini-2.0-flash, anthropic/claude...
+    response_format=GuideOutline
+)
+response = llm.call(messages=messages)
+```
+
+当你需要特定的、结构化输出时，这比使用 crew 更高效。
+
+### 2. 事件驱动架构
+
+Flows 使用装饰器建立组件之间的关系：
+
+```python
+@start()
+def get_user_input(self):
+    # flow 中的第一步
+    # ...
+
+@listen(get_user_input)
+def create_guide_outline(self, state):
+    # 这在 get_user_input 完成时运行
+    # ...
+```
+
+这为你的应用程序创建了清晰的、声明性的结构。
+
+### 3. 状态管理
+
+Flows 在步骤之间维护状态，使共享数据变得容易：
+
+```python
+class GuideCreatorState(BaseModel):
+    topic: str = ""
+    audience_level: str = ""
+    guide_outline: GuideOutline = None
+    sections_content: Dict[str, str] = {}
+```
+
+这为在整个 flow 中跟踪和转换数据提供了类型安全的方式。
+
+### 4. Crew 集成
+
+Flows 可以无缝集成 crew 进行复杂协作任务：
+
+```python
+result = ContentCrew().crew().kickoff(inputs={
+    "section_title": section.title,
+    # ...
+})
+```
+
+这允许你为应用程序的每个部分使用正确的工具——简单任务使用直接 LLM 调用，复杂协作使用 crew。
+
+## 下一步
+
+既然你已经构建了你的第一个 flow，你可以：
+
+1. 试验更复杂的 flow 结构和模式
+2. 尝试使用 `@router()` 在你的 flows 中创建条件分支
+3. 探索 `and_` 和 `or_` 函数用于更复杂的并行执行
+4. 将你的 flow 连接到外部 API、数据库或用户界面
+5. 在单个 flow 中组合多个专业化 crew
+
+<Check>
+恭喜！你已成功构建了你的第一个 CrewAI Flow，它结合常规代码、直接 LLM 调用和基于 crew 的处理来创建全面的指南。这些基础技能使你能够创建越来越复杂的 AI 应用程序，这些应用程序可以通过过程控制和协作智能的组合来处理复杂的多阶段问题。
+</Check>

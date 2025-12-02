@@ -1,0 +1,70 @@
+---
+title: 创建自定义工具
+description: 在 CrewAI 框架中创建、使用和管理自定义工具的综合指南，包括新功能和错误处理。
+icon: hammer
+mode: "wide"
+---
+
+## 在 CrewAI 中创建和利用工具
+
+本指南提供了在 CrewAI 框架中创建自定义工具的详细说明，以及如何有效地管理和利用这些工具，
+整合最新功能，如工具委托、错误处理和动态工具调用。它还强调了协作工具的重要性，
+使代理能够执行广泛的操作。
+
+### 子类化 `BaseTool`
+
+要创建个性化工具，继承自 `BaseTool` 并定义必要的属性，包括用于输入验证的 `args_schema` 和 `_run` 方法。
+
+```python Code
+from typing import Type
+from crewai.tools import BaseTool
+from pydantic import BaseModel, Field
+
+class MyToolInput(BaseModel):
+    """MyCustomTool 的输入模式。"""
+    argument: str = Field(..., description="参数的描述。")
+
+class MyCustomTool(BaseTool):
+    name: str = "我的工具名称"
+    description: str = "此工具的功能。对有效利用至关重要。"
+    args_schema: Type[BaseModel] = MyToolInput
+
+    def _run(self, argument: str) -> str:
+        # 您的工具逻辑在这里
+        return "工具的结果"
+```
+
+### 使用 `tool` 装饰器
+
+或者，您可以使用工具装饰器 `@tool`。这种方法允许您直接在函数中定义工具的属性和功能，
+提供一种简洁有效的方式来创建针对您的需求定制的专门工具。
+
+```python Code
+from crewai.tools import tool
+
+@tool("工具名称")
+def my_simple_tool(question: str) -> str:
+    """用于清晰性的工具描述。"""
+    # 工具逻辑在这里
+    return "工具输出"
+```
+
+### 为工具定义缓存函数
+
+要通过缓存优化工具性能，使用 `cache_function` 属性定义自定义缓存策略。
+
+```python Code
+@tool("带缓存功能的工具")
+def cached_tool(argument: str) -> str:
+    """工具功能描述。"""
+    return "可缓存的结果"
+
+def my_cache_strategy(arguments: dict, result: str) -> bool:
+    # 定义自定义缓存逻辑
+    return True if some_condition else False
+
+cached_tool.cache_function = my_cache_strategy
+```
+
+通过遵循这些指南并将新功能和协作工具整合到您的工具创建和管理过程中，
+您可以利用 CrewAI 框架的全部功能，增强开发体验和 AI 代理的效率。

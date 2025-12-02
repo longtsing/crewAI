@@ -1,0 +1,360 @@
+---
+title: 协作
+description: 如何启用代理协同工作、委派任务，并在 CrewAI 团队内有效通信。
+icon: screen-users
+mode: "wide"
+---
+
+## 概述
+
+CrewAI 中的协作使代理能够作为团队协同工作，通过委派任务和提问来利用彼此的专业知识。当 `allow_delegation=True` 时，代理自动获得强大的协作工具访问权限。
+
+## 快速入门：启用协作
+
+```python
+from crewai import Agent, Crew, Task
+
+# 为代理启用协作
+researcher = Agent(
+    role="研究专家",
+    goal="对任何主题进行彻底研究",
+    backstory="拥有各种来源访问权限的专家研究员",
+    allow_delegation=True,  # 🔑 协作的关键设置
+    verbose=True
+)
+
+writer = Agent(
+    role="内容撰稿人", 
+    goal="基于研究创建引人入胜的内容",
+    backstory="将研究转化为引人入胜内容的技术撰稿人",
+    allow_delegation=True,  # 🔑 启用向其他代理提问
+    verbose=True
+)
+
+# 代理现在可以自动协作
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[...],
+    verbose=True
+)
+```
+
+## 代理协作如何工作
+
+当 `allow_delegation=True` 时，CrewAI 自动为代理提供两个强大的工具：
+
+### 1. **委派工作工具**
+允许代理将任务分配给具有特定专业知识的队友。
+
+```python
+# 代理自动获得此工具：
+# Delegate work to coworker(task: str, context: str, coworker: str)
+```
+
+### 2. **提问工具** 
+使代理能够提出具体问题以从同事那里收集信息。
+
+```python
+# 代理自动获得此工具：
+# Ask question to coworker(question: str, context: str, coworker: str)
+```
+
+## 协作实践
+
+以下是一个完整的示例，展示代理在内容创建任务上协作：
+
+```python
+from crewai import Agent, Crew, Task, Process
+
+# 创建协作代理
+researcher = Agent(
+    role="研究专家",
+    goal="在任何主题上找到准确、最新的信息",
+    backstory="""您是一位细心的研究员，拥有在各种领域寻找可靠来源和事实核查信息的专业知识。""",
+    allow_delegation=True,
+    verbose=True
+)
+
+writer = Agent(
+    role="内容撰稿人",
+    goal="创建引人入胜、结构良好的内容",
+    backstory="""您是一位技术熟练的内容撰稿人，擅长将研究转化为引人入胜、可读的内容，适用于不同受众。""",
+    allow_delegation=True,
+    verbose=True
+)
+
+editor = Agent(
+    role="内容编辑",
+    goal="确保内容质量和一致性",
+    backstory="""您是一位经验丰富的编辑，注重细节，确保内容达到高标准的清晰度和准确性。""",
+    allow_delegation=True,
+    verbose=True
+)
+
+# 创建鼓励协作的任务
+article_task = Task(
+    description="""撰写一篇关于"AI 在医疗保健中的未来"的全面 1000 字文章。
+    
+    文章应包括：
+    - AI 在医疗保健中的当前应用
+    - 新兴趋势和技术  
+    - 潜在挑战和伦理考虑
+    - 未来 5 年的专家预测
+    
+    与您的队友协作以确保准确性和质量。""",
+    expected_output="一篇研究充分、引人入胜的 1000 字文章，具有适当的结构和引用",
+    agent=writer  # 撰稿人主导，但可将研究委派给研究员
+)
+
+# 创建协作团队
+crew = Crew(
+    agents=[researcher, writer, editor],
+    tasks=[article_task],
+    process=Process.sequential,
+    verbose=True
+)
+
+result = crew.kickoff()
+```
+
+## 协作模式
+
+### 模式 1：研究 → 撰写 → 编辑
+```python
+research_task = Task(
+    description="研究量子计算的最新发展",
+    expected_output="包含关键发现和来源的综合研究摘要",
+    agent=researcher
+)
+
+writing_task = Task(
+    description="基于研究发现撰写文章",
+    expected_output="关于量子计算的引人入胜 800 字文章",
+    agent=writer,
+    context=[research_task]  # 获取研究输出作为上下文
+)
+
+editing_task = Task(
+    description="编辑和润色文章以供发表",
+    expected_output="经改进的清晰度和流畅性的发表就绪文章",
+    agent=editor,
+    context=[writing_task]  # 获取文章草稿作为上下文
+)
+```
+
+### 模式 2：协作单一任务
+```python
+collaborative_task = Task(
+    description="""为新的 AI 产品创建营销策略。
+    
+    撰稿人：专注于信息和内容策略
+    研究员：提供市场分析和竞争对手洞察
+    
+    协作创建全面策略。""",
+    expected_output="具有研究支持的完整营销策略",
+    agent=writer  # 主导代理，但可委派给研究员
+)
+```
+
+## 层次协作
+
+对于复杂项目，使用具有管理代理的层次流程：
+
+```python
+from crewai import Agent, Crew, Task, Process
+
+# 管理代理协调团队
+manager = Agent(
+    role="项目经理",
+    goal="协调团队努力并确保项目成功",
+    backstory="擅长委派和质量控制的经验丰富的项目经理",
+    allow_delegation=True,
+    verbose=True
+)
+
+# 专家代理
+researcher = Agent(
+    role="研究员",
+    goal="提供准确的研究和分析",
+    backstory="具有深度分析技能的专家研究员",
+    allow_delegation=False,  # 专家专注于其专业知识
+    verbose=True
+)
+
+writer = Agent(
+    role="撰稿人", 
+    goal="创建引人入胜的内容",
+    backstory="创建引人入胜内容的技术撰稿人",
+    allow_delegation=False,
+    verbose=True
+)
+
+# 管理主导的任务
+project_task = Task(
+    description="创建具有建议的全面市场分析报告",
+    expected_output="执行摘要、详细分析和战略建议",
+    agent=manager  # 管理者将委派给专家
+)
+
+# 层次团队
+crew = Crew(
+    agents=[manager, researcher, writer],
+    tasks=[project_task],
+    process=Process.hierarchical,  # 管理者协调一切
+    manager_llm="gpt-4o",  # 为管理者指定 LLM
+    verbose=True
+)
+```
+
+## 协作最佳实践
+
+### 1. **明确角色定义**
+```python
+# ✅ 良好：特定、互补的角色
+researcher = Agent(role="市场研究分析师", ...)
+writer = Agent(role="技术内容撰稿人", ...)
+
+# ❌ 避免：重叠或模糊的角色  
+agent1 = Agent(role="通用助手", ...)
+agent2 = Agent(role="助手", ...)
+```
+
+### 2. **策略性委派启用**
+```python
+# ✅ 为协调者和通才启用委派
+lead_agent = Agent(
+    role="内容负责人",
+    allow_delegation=True,  # 可以委派给专家
+    ...
+)
+
+# ✅ 为专注专家禁用（可选）
+specialist_agent = Agent(
+    role="数据分析师", 
+    allow_delegation=False,  # 专注于核心专业知识
+    ...
+)
+```
+
+### 3. **上下文共享**
+```python
+# ✅ 使用上下文参数处理任务依赖
+writing_task = Task(
+    description="基于研究撰写文章",
+    agent=writer,
+    context=[research_task],  # 共享研究结果
+    ...
+)
+```
+
+### 4. **明确任务描述**
+```python
+# ✅ 具体可操作的描述
+Task(
+    description="""研究 AI 聊天机器人领域的竞争对手。
+    专注于：定价模型、关键功能、目标市场。
+    以结构化格式提供数据。""",
+    ...
+)
+
+# ❌ 不指导协作的模糊描述
+Task(description="对聊天机器人做一些研究", ...)
+```
+
+## 协作故障排除
+
+### 问题：代理不协作
+**症状：**代理孤立工作，没有委派发生
+```python
+# ✅ 解决方案：确保启用委派
+agent = Agent(
+    role="...",
+    allow_delegation=True,  # 这是必需的！
+    ...
+)
+```
+
+### 问题：过多来回
+**症状：**代理提出过多问题，进展缓慢
+```python
+# ✅ 解决方案：提供更好的上下文和具体角色
+Task(
+    description="""撰写关于机器学习的技术博客文章。
+    
+    上下文：目标受众是具有基础机器学习知识的软件开发人员。
+    长度：1200 字
+    包括：代码示例、实际应用、最佳实践
+    
+    如果需要具体技术细节，将研究委派给研究员。""",
+    ...
+)
+```
+
+### 问题：委派循环
+**症状：**代理无限期来回委派
+```python
+# ✅ 解决方案：清晰的层次和职责
+manager = Agent(role="管理者", allow_delegation=True)
+specialist1 = Agent(role="专家 A", allow_delegation=False)  # 无重新委派
+specialist2 = Agent(role="专家 B", allow_delegation=False)
+```
+
+## 高级协作功能
+
+### 自定义协作规则
+```python
+# 在代理背景故事中设置特定协作指导原则
+agent = Agent(
+    role="高级开发人员",
+    backstory="""您领导开发项目并与团队成员协调。
+    
+    协作指导原则：
+    - 将研究任务委派给研究分析师
+    - 向设计师询问 UI/UX 指导  
+    - 咨询 QA 工程师测试策略
+    - 仅将阻碍问题升级给项目经理""",
+    allow_delegation=True
+)
+```
+
+### 监控协作
+```python
+def track_collaboration(output):
+    """跟踪协作模式"""
+    if "Delegate work to coworker" in output.raw:
+        print("🤝 发生了委派")
+    if "Ask question to coworker" in output.raw:
+        print("❓ 提出了问题")
+
+crew = Crew(
+    agents=[...],
+    tasks=[...],
+    step_callback=track_collaboration,  # 监控协作
+    verbose=True
+)
+```
+
+## 记忆和学习
+
+使代理能够记住过去的协作：
+
+```python
+agent = Agent(
+    role="内容负责人",
+    memory=True,  # 记住过去的交互
+    allow_delegation=True,
+    verbose=True
+)
+```
+
+启用记忆后，代理从过去的协作中学习并随时间改进其委派决策。
+
+## 下一步
+
+- **尝试示例**：从基本协作示例开始
+- **试验角色**：测试不同的代理角色组合  
+- **监控交互**：使用 `verbose=True` 查看协作实践
+- **优化任务描述**：明确的任务带来更好的协作
+- **扩展**：对于复杂项目尝试层次流程
+
+协作将个体 AI 代理转变为能够共同应对复杂、多方面挑战的强大团队。

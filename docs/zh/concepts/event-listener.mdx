@@ -1,0 +1,312 @@
+---
+title: '事件监听器'
+description: '接入 CrewAI 事件以构建自定义集成和监控'
+icon: spinner
+mode: "wide"
+---
+
+## 概述
+
+CrewAI 提供了一个强大的事件系统，允许您监听和响应团队执行期间发生的各种事件。此功能使您能够构建自定义集成、监控解决方案、日志系统，或任何需要基于 CrewAI 内部事件触发的其他功能。
+
+## 工作原理
+
+CrewAI 使用事件总线架构在整个执行生命周期中发出事件。事件系统建立在以下组件之上：
+
+1. **CrewAIEventsBus**：管理事件注册和发射的单例事件总线
+2. **BaseEvent**：系统中所有事件的基类
+3. **BaseEventListener**：用于创建自定义事件监听器的抽象基类
+
+当 CrewAI 中发生特定操作时（如团队开始执行、代理完成任务或工具被使用），系统会发出相应的事件。您可以注册这些事件的处理器，在事件发生时执行自定义代码。
+
+<Note type="info" title="企业增强：提示跟踪">
+CrewAI AOP 提供了内置的提示跟踪功能，利用事件系统跟踪、存储和可视化所有提示、完成和相关元数据。这为代理操作提供了强大的调试功能和透明度。
+
+![提示跟踪仪表板](/images/enterprise/traces-overview.png)
+
+使用提示跟踪您可以：
+- 查看发送到您的 LLM 的所有提示的完整历史记录
+- 跟踪令牌使用和成本
+- 调试代理推理故障
+- 与您的团队共享提示序列
+- 比较不同的提示策略
+- 导出跟踪以进行合规性和审计
+</Note>
+
+## 创建自定义事件监听器
+
+要创建自定义事件监听器，您需要：
+
+1. 创建一个继承自 `BaseEventListener` 的类
+2. 实现 `setup_listeners` 方法
+3. 为您感兴趣的事件注册处理器
+4. 在适当的文件中创建监听器实例
+
+以下是自定义事件监听器类的简单示例：
+
+```python
+from crewai.events import (
+    CrewKickoffStartedEvent,
+    CrewKickoffCompletedEvent,
+    AgentExecutionCompletedEvent,
+)
+from crewai.events import BaseEventListener
+
+class MyCustomListener(BaseEventListener):
+    def __init__(self):
+        super().__init__()
+
+    def setup_listeners(self, crewai_event_bus):
+        @crewai_event_bus.on(CrewKickoffStartedEvent)
+        def on_crew_started(source, event):
+            print(f"团队 '{event.crew_name}' 已开始执行！")
+
+        @crewai_event_bus.on(CrewKickoffCompletedEvent)
+        def on_crew_completed(source, event):
+            print(f"团队 '{event.crew_name}' 已完成执行！")
+            print(f"输出：{event.output}")
+
+        @crewai_event_bus.on(AgentExecutionCompletedEvent)
+        def on_agent_execution_completed(source, event):
+            print(f"代理 '{event.agent.role}' 已完成任务")
+            print(f"输出：{event.output}")
+```
+
+## 正确注册您的监听器
+
+仅仅定义监听器类是不够的。您需要创建它的实例并确保在应用程序中导入它。这确保：
+
+1. 事件处理器在事件总线上注册
+2. 监听器实例保留在内存中（不被垃圾回收）
+3. 在发出事件时监听器处于活动状态
+
+### 选项 1：在您的团队或流程实现中导入和实例化
+
+在您的团队或流程定义的文件顶部创建和导入监听器是最重要的：
+
+#### 对于基于团队的应用程序
+
+在您的团队实现文件的顶部创建和导入监听器：
+
+```python
+# 在您的 crew.py 文件中
+from crewai import Agent, Crew, Task
+from my_listeners import MyCustomListener
+
+# 创建监听器实例
+my_listener = MyCustomListener()
+
+class MyCustomCrew:
+    # 您的团队实现...
+
+    def crew(self):
+        return Crew(
+            agents=[...],
+            tasks=[...],
+            # ...
+        )
+```
+
+#### 对于基于流程的应用程序
+
+在您的流程实现文件的顶部创建和导入监听器：
+
+```python
+# 在您的 main.py 或 flow.py 文件中
+from crewai.flow import Flow, listen, start
+from my_listeners import MyCustomListener
+
+# 创建监听器实例
+my_listener = MyCustomListener()
+
+class MyCustomFlow(Flow):
+    # 您的流程实现...
+
+    @start()
+    def first_step(self):
+        # ...
+```
+
+这确保当您的团队或流程执行时加载并激活您的监听器。
+
+### 选项 2：为您的监听器创建包
+
+对于更结构化的方法，特别是如果您有多个监听器：
+
+1. 为您的监听器创建包：
+
+```
+my_project/
+  ├── listeners/
+  │   ├── __init__.py
+  │   ├── my_custom_listener.py
+  │   └── another_listener.py
+```
+
+2. 在 `my_custom_listener.py` 中，定义您的监听器类并创建实例：
+
+```python
+# my_custom_listener.py
+from crewai.events import BaseEventListener
+# ... 导入事件 ...
+
+class MyCustomListener(BaseEventListener):
+    # ... 实现 ...
+
+# 创建监听器实例
+my_custom_listener = MyCustomListener()
+```
+
+3. 在 `__init__.py` 中，导入监听器实例以确保它们被加载：
+
+```python
+# __init__.py
+from .my_custom_listener import my_custom_listener
+from .another_listener import another_listener
+
+# 如果需要，可选择导出它们
+__all__ = ['my_custom_listener', 'another_listener']
+```
+
+4. 在您的团队或流程文件中导入您的监听器包：
+
+```python
+# 在您的 crew.py 或 flow.py 文件中
+import my_project.listeners  # 这会加载您的所有监听器
+
+class MyCustomCrew:
+    # 您的团队实现...
+```
+
+这就是第三方事件监听器在 CrewAI 代码库中注册的方式。
+
+## 可用事件类型
+
+CrewAI 提供了您可以监听的广泛事件：
+
+### 团队事件
+
+- **CrewKickoffStartedEvent**：团队开始执行时发出
+- **CrewKickoffCompletedEvent**：团队完成执行时发出
+- **CrewKickoffFailedEvent**：团队未能完成执行时发出
+- **CrewTestStartedEvent**：团队开始测试时发出
+- **CrewTestCompletedEvent**：团队完成测试时发出
+- **CrewTestFailedEvent**：团队未能完成测试时发出
+- **CrewTrainStartedEvent**：团队开始训练时发出
+- **CrewTrainCompletedEvent**：团队完成训练时发出
+- **CrewTrainFailedEvent**：团队未能完成训练时发出
+
+### 代理事件
+
+- **AgentExecutionStartedEvent**：代理开始执行任务时发出
+- **AgentExecutionCompletedEvent**：代理完成执行任务时发出
+- **AgentExecutionErrorEvent**：代理在执行期间遇到错误时发出
+
+### 任务事件
+
+- **TaskStartedEvent**：任务开始执行时发出
+- **TaskCompletedEvent**：任务完成执行时发出
+- **TaskFailedEvent**：任务未能完成执行时发出
+- **TaskEvaluationEvent**：任务被评估时发出
+
+### 工具使用事件
+
+- **ToolUsageStartedEvent**：工具执行开始时发出
+- **ToolUsageFinishedEvent**：工具执行完成时发出
+- **ToolUsageErrorEvent**：工具执行遇到错误时发出
+- **ToolValidateInputErrorEvent**：工具输入验证遇到错误时发出
+- **ToolExecutionErrorEvent**：工具执行遇到错误时发出
+- **ToolSelectionErrorEvent**：选择工具时出现错误时发出
+
+### 知识事件
+
+- **KnowledgeRetrievalStartedEvent**：知识检索开始时发出
+- **KnowledgeRetrievalCompletedEvent**：知识检索完成时发出
+- **KnowledgeQueryStartedEvent**：知识查询开始时发出
+- **KnowledgeQueryCompletedEvent**：知识查询完成时发出
+- **KnowledgeQueryFailedEvent**：知识查询失败时发出
+- **KnowledgeSearchQueryFailedEvent**：知识搜索查询失败时发出
+
+### LLM 防护栏事件
+
+- **LLMGuardrailStartedEvent**：护栏验证开始时发出。包含关于正在应用的护栏和重试次数的详细信息。
+- **LLMGuardrailCompletedEvent**：护栏验证完成时发出。包含关于验证成功/失败、结果和任何错误消息的详细信息。
+
+### 流程事件
+
+- **FlowCreatedEvent**：创建流程时发出
+- **FlowStartedEvent**：流程开始执行时发出
+- **FlowFinishedEvent**：流程完成执行时发出
+- **FlowPlotEvent**：绘制流程时发出
+- **MethodExecutionStartedEvent**：流程方法开始执行时发出
+- **MethodExecutionFinishedEvent**：流程方法完成执行时发出
+- **MethodExecutionFailedEvent**：流程方法未能完成执行时发出
+
+### LLM 事件
+
+- **LLMCallStartedEvent**：LLM 调用开始时发出
+- **LLMCallCompletedEvent**：LLM 调用完成时发出
+- **LLMCallFailedEvent**：LLM 调用失败时发出
+- **LLMStreamChunkEvent**：在流式 LLM 响应期间为每个接收到的块发出
+
+### 记忆事件
+
+- **MemoryQueryStartedEvent**：记忆查询开始时发出。包含查询、限制和可选的分数阈值。
+- **MemoryQueryCompletedEvent**：记忆查询成功完成时发出。包含查询、结果、限制、分数阈值和查询执行时间。
+- **MemoryQueryFailedEvent**：记忆查询失败时发出。包含查询、限制、分数阈值和错误消息。
+- **MemorySaveStartedEvent**：记忆保存操作开始时发出。包含要保存的值、元数据和可选的代理角色。
+- **MemorySaveCompletedEvent**：记忆保存操作成功完成时发出。包含保存的值、元数据、代理角色和保存执行时间。
+- **MemorySaveFailedEvent**：记忆保存操作失败时发出。包含值、元数据、代理角色和错误消息。
+- **MemoryRetrievalStartedEvent**：任务提示的记忆检索开始时发出。包含可选的任务 ID。
+- **MemoryRetrievalCompletedEvent**：任务提示的记忆检索成功完成时发出。包含任务 ID、记忆内容和检索执行时间。
+
+## 事件处理器结构
+
+每个事件处理器接收两个参数：
+
+1. **source**：发出事件的对象
+2. **event**：事件实例，包含事件特定的数据
+
+事件对象的结构取决于事件类型，但所有事件都继承自 `BaseEvent` 并包括：
+
+- **timestamp**：事件发出时的时间
+- **type**：事件类型的字符串标识符
+
+额外字段因事件类型而异。例如，`CrewKickoffCompletedEvent` 包括 `crew_name` 和 `output` 字段。
+
+## 高级用法：作用域处理器
+
+对于临时事件处理（对测试或特定操作有用），您可以使用 `scoped_handlers` 上下文管理器：
+
+```python
+from crewai.events import crewai_event_bus, CrewKickoffStartedEvent
+
+with crewai_event_bus.scoped_handlers():
+    @crewai_event_bus.on(CrewKickoffStartedEvent)
+    def temp_handler(source, event):
+        print("此处理器仅在此上下文中存在")
+
+    # 执行发出事件的操作
+
+# 在上下文外，临时处理器被移除
+```
+
+## 用例
+
+事件监听器可用于各种目的：
+
+1. **日志记录和监控**：跟踪您的团队执行并记录重要事件
+2. **分析**：收集关于您的团队性能和行为的数据
+3. **调试**：设置临时监听器调试特定问题
+4. **集成**：将 CrewAI 与外部系统连接，如监控平台、数据库或通知服务
+5. **自定义行为**：基于特定事件触发自定义操作
+
+## 最佳实践
+
+1. **保持处理器轻量**：事件处理器应该是轻量级的，避免阻塞操作
+2. **错误处理**：在您的事件处理器中包含适当的错误处理，以防止异常影响主执行
+3. **清理**：如果您的监听器分配资源，确保它们被正确清理
+4. **选择性监听**：仅监听您实际需要处理的事件
+5. **测试**：独立测试您的事件监听器，确保它们按预期行为
+
+通过利用 CrewAI 的事件系统，您可以扩展其功能并将其与您现有的基础设施无缝集成。

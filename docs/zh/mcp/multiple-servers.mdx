@@ -1,0 +1,65 @@
+---
+title: 连接多个 MCP 服务器
+description: 学习如何在 CrewAI 中使用 MCPServerAdapter 同时连接到多个 MCP 服务器并聚合它们的工具。
+icon: layer-group
+mode: "wide"
+---
+
+## 概述
+
+`crewai-tools` 中的 `MCPServerAdapter` 允许您同时连接到多个 MCP 服务器。当您的代理需要访问分布在不同服务或环境中的工具时，这很有用。适配器聚合所有指定服务器的工具，使它们可用于您的 CrewAI 代理。
+
+## 配置
+
+要连接到多个服务器，您需要向 `MCPServerAdapter` 提供一个服务器参数字典列表。列表中的每个字典应该为其中一个 MCP 服务器定义参数。
+
+列表中每个服务器支持的传输类型包括 `stdio`、`sse` 和 `streamable-http`。
+
+```python
+from crewai import Agent, Task, Crew, Process
+from crewai_tools import MCPServerAdapter
+from mcp import StdioServerParameters # Stdio 示例需要
+
+# 定义多个 MCP 服务器的参数
+server_params_list = [
+    # 可流式 HTTP 服务器
+    {
+        "url": "http://localhost:8001/mcp", 
+        "transport": "streamable-http"
+    },
+    # SSE 服务器
+    {
+        "url": "http://localhost:8000/sse",
+        "transport": "sse"
+    },
+    # StdIO 服务器
+    StdioServerParameters(
+        command="python3",
+        args=["servers/your_stdio_server.py"],
+        env={"UV_PYTHON": "3.12", **os.environ},
+    )
+]
+
+try:
+    with MCPServerAdapter(server_params_list) as aggregated_tools:
+        print(f"可用的聚合工具: {[tool.name for tool in aggregated_tools]}")
+
+        multi_server_agent = Agent(
+            role="Versatile Assistant",
+            goal="Utilize tools from local Stdio, remote SSE, and remote HTTP MCP servers.",
+            backstory="An AI agent capable of leveraging a diverse set of tools from multiple sources.",
+            tools=aggregated_tools, # 所有工具都在这里可用
+            verbose=True,
+        )
+
+        ... # 您的其他代理、任务和团队代码在这里
+
+except Exception as e:
+    print(f"Error connecting to or using multiple MCP servers (Managed): {e}")
+    print("Ensure all MCP servers are running and accessible with correct configurations.")
+
+```
+
+## 连接管理
+
+当使用上下文管理器（`with` 语句）时，`MCPServerAdapter` 处理与配置的 MCP 服务器的所有连接的生命周期（启动和停止）。这简化了资源管理并确保在退出上下文时所有连接都正确关闭。
